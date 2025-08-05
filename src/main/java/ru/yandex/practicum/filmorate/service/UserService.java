@@ -22,6 +22,7 @@ public class UserService {
     public UserService(UserStorage userStorage) {
         this.userStorage = userStorage;
     }
+
     //___________User____________
     // Creating a new user
     public User addUser(User user) {
