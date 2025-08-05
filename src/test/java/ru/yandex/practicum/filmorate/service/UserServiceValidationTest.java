@@ -1,21 +1,23 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class UserControllerTest {
-    private UserController controller;
+class UserServiceValidationTest {
+    private UserService userService;
 
     @BeforeEach
     void setUp() {
-        controller = new UserController();
+        userService = new UserService(new InMemoryUserStorage());
     }
 
     // ____________Helpers___________
@@ -33,7 +35,7 @@ class UserControllerTest {
     // Asserts that validation fails with the expected error message
     private void assertValidationFails(User user, String expectedMessage) {
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> controller.createUser(user));
+                () -> userService.addUser(user));
         assertEquals(expectedMessage, exception.getMessage());
     }
 
@@ -43,7 +45,7 @@ class UserControllerTest {
     @Test
     void shouldAddUserWhenDataIsValid() {
         User user = makeValidUser();
-        assertDoesNotThrow(() -> controller.createUser(user));
+        assertDoesNotThrow(() -> userService.addUser(user));
     }
 
     // Test: Should fail when email is empty
@@ -83,7 +85,7 @@ class UserControllerTest {
     void shouldAddUserWhenBirthdayIsToday() {
         User user = makeValidUser();
         user.setBirthday(LocalDate.now());
-        assertDoesNotThrow(() -> controller.createUser(user));
+        assertDoesNotThrow(() -> userService.addUser(user));
     }
 
     // Test: Should fail when birthday is in the future
@@ -99,7 +101,7 @@ class UserControllerTest {
     void shouldSetLoginAsNameWhenNameIsNull() {
         User user = makeValidUser();
         user.setName(null);
-        controller.createUser(user);
+        userService.addUser(user);
         assertEquals(user.getLogin(), user.getName());
     }
 
@@ -108,7 +110,7 @@ class UserControllerTest {
     void shouldSetLoginAsNameWhenNameIsBlank() {
         User user = makeValidUser();
         user.setName("   ");
-        controller.createUser(user);
+        userService.addUser(user);
         assertEquals(user.getLogin(), user.getName());
     }
 
@@ -116,9 +118,9 @@ class UserControllerTest {
     @Test
     void shouldUpdateExistingUser() {
         User user = makeValidUser();
-        User created = controller.createUser(user);
+        User created = userService.addUser(user);
         created.setName("Updated Name");
-        User updated = controller.updateUser(created);
+        User updated = userService.updateUser(created);
         assertEquals("Updated Name", updated.getName());
     }
 
@@ -127,8 +129,8 @@ class UserControllerTest {
     void shouldFailWhenUpdatingNonexistentUser() {
         User user = makeValidUser();
         user.setId(999);
-        ValidationException exception = assertThrows(ValidationException.class,
-                () -> controller.updateUser(user));
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> userService.updateUser(user));
         assertEquals("User with id=999 not found.", exception.getMessage());
     }
 
@@ -140,22 +142,22 @@ class UserControllerTest {
         u2.setEmail("another@example.com");
         u2.setLogin("user4321");
 
-        controller.createUser(u1);
-        controller.createUser(u2);
+        userService.addUser(u1);
+        userService.addUser(u2);
 
-        assertEquals(2, controller.getAllUsers().size());
+        assertEquals(2, userService.getAllUsers().size());
     }
 
     // Test: Should return all Users with correct Ids
     @Test
     void shouldReturnAllUsersWithCorrectIds() {
-        User u1 = controller.createUser(makeValidUser());
+        User u1 = userService.addUser(makeValidUser());
         User u2 = makeValidUser();
         u2.setLogin("secondUser");
         u2.setEmail("second@example.com");
-        User u2Created = controller.createUser(u2);
+        User u2Created = userService.addUser(u2);
 
-        List<User> users = controller.getAllUsers();
+        List<User> users = userService.getAllUsers();
         assertEquals(2, users.size());
         assertEquals(1, u1.getId());
         assertEquals(2, u2Created.getId());
