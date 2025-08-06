@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
@@ -101,5 +102,29 @@ class FilmServiceTest {
         assertEquals(f2.getId(), popular.get(0).getId());
         assertEquals(f1.getId(), popular.get(1).getId());
         assertEquals(f3.getId(), popular.get(2).getId());
+    }
+
+    // Test: Should throw when adding duplicate like
+    @Test
+    void shouldThrowWhenAddingDuplicateLike() {
+        Film film = registerFilm("Avatar");
+        User user = registerUser("userX", "x@mail.com");
+
+        filmService.addLike(film.getId(), user.getId());
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                filmService.addLike(film.getId(), user.getId()));
+        assertEquals("User with id=" + user.getId() + " has already liked film with id=" + film.getId(), ex.getMessage());
+    }
+
+    // Should throw when removing non-existent like
+    @Test
+    void shouldThrowWhenRemovingNonexistentLike() {
+        Film film = registerFilm("Titanic");
+        User user = registerUser("userY", "y@mail.com");
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                filmService.removeLike(film.getId(), user.getId()));
+        assertEquals("Like from user not found.", ex.getMessage());
     }
 }

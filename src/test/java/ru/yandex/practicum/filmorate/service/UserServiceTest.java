@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
@@ -89,5 +90,28 @@ class UserServiceTest {
 
         assertEquals(1, common.size());
         assertEquals(user3.getId(), common.get(0).getId());
+    }
+
+    // Test: Should throw when trying to add same friend again
+    @Test
+    void shouldThrowWhenAddingDuplicateFriend() {
+        User user1 = registerUser("user1", "user1@example.com");
+        User user2 = registerUser("user2", "user2@example.com");
+
+        service.addFriend(user1.getId(), user2.getId());
+
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                service.addFriend(user1.getId(), user2.getId()));
+        assertEquals("Users are already friends.", exception.getMessage());
+    }
+
+    // Test: Should throw when trying to add oneself as a friend
+    @Test
+    void shouldThrowWhenAddingSelfAsFriend() {
+        User user = registerUser("user1", "user1@example.com");
+
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                service.addFriend(user.getId(), user.getId()));
+        assertEquals("User cannot add themselves as a friend.", exception.getMessage());
     }
 }
