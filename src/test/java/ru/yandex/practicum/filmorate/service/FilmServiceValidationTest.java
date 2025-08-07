@@ -1,20 +1,23 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FilmControllerTest {
-    private FilmController controller;
+class FilmServiceValidationTest {
+    private FilmService filmService;
 
     @BeforeEach
     void setUp() {
-        controller = new FilmController();
+        filmService = new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage());
     }
 
     // ____________Helpers___________
@@ -32,7 +35,7 @@ class FilmControllerTest {
     // Asserts that validation fails with the expected message
     private void assertValidationFails(Film film, String expectedMessage) {
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> controller.addFilm(film));
+                () -> filmService.addFilm(film));
         assertEquals(expectedMessage, exception.getMessage());
     }
 
@@ -42,7 +45,7 @@ class FilmControllerTest {
     @Test
     void shouldAddFilmWhenDataIsValid() {
         Film film = makeValidFilm();
-        assertDoesNotThrow(() -> controller.addFilm(film));
+        assertDoesNotThrow(() -> filmService.addFilm(film));
     }
 
     // Test: Should fail when the film name is blank
@@ -58,7 +61,7 @@ class FilmControllerTest {
     void shouldAddFilmWhenDescriptionIsExactly200Characters() {
         Film film = makeValidFilm();
         film.setDescription("y".repeat(200));
-        assertDoesNotThrow(() -> controller.addFilm(film));
+        assertDoesNotThrow(() -> filmService.addFilm(film));
     }
 
     // Test: Should fail when description exceeds 200 characters
@@ -97,9 +100,9 @@ class FilmControllerTest {
     @Test
     void shouldUpdateExistingFilm() {
         Film film = makeValidFilm();
-        Film added = controller.addFilm(film);
+        Film added = filmService.addFilm(film);
         added.setName("Updated Name");
-        Film updated = controller.updateFilm(added);
+        Film updated = filmService.updateFilm(added);
         assertEquals("Updated Name", updated.getName());
     }
 
@@ -108,8 +111,8 @@ class FilmControllerTest {
     void shouldAddFilmWhenUpdatingNonexistentFilm() {
         Film film = makeValidFilm();
         film.setId(999);
-        ValidationException exception = assertThrows(ValidationException.class,
-                () -> controller.updateFilm(film));
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> filmService.updateFilm(film));
         assertEquals("Movie with id=999 not found.", exception.getMessage());
     }
 
@@ -120,8 +123,8 @@ class FilmControllerTest {
         Film f2 = makeValidFilm();
         f2.setName("Interstellar");
 
-        controller.addFilm(f1);
-        controller.addFilm(f2);
-        assertEquals(2, controller.getAllFilms().size());
+        filmService.addFilm(f1);
+        filmService.addFilm(f2);
+        assertEquals(2, filmService.getAllFilms().size());
     }
 }
