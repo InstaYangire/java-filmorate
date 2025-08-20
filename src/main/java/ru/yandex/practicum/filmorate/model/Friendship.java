@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
+@AllArgsConstructor
 public class Friendship {
-    private int userId;          // The one who initiated the friendship
-    private int friendId;        // To whom the friend request was sent
-    private FriendshipStatus status;
+    private final int userId;      // Who sent the friend request
+    private final int friendId;    // Who received the request
+    private final boolean confirmed; // Whether the friendship is confirmed
 }
