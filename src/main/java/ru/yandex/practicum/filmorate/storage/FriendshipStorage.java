@@ -7,7 +7,10 @@ import java.util.List;
 public interface FriendshipStorage {
 
     void add(Friendship friendship);              // Create
+
     void update(Friendship friendship);           // Update
+
     void remove(Friendship friendship);           // Delete
+
     List<Friendship> getFriendshipsByUserId(int userId); // Read
 }

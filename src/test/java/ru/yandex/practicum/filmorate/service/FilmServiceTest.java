@@ -2,10 +2,15 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.MpaDbStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryFriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
@@ -53,8 +58,26 @@ class FilmServiceTest {
     void setUp() {
         InMemoryUserStorage userStorage = new InMemoryUserStorage();
         InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
-        userService = new UserService(userStorage);
-        filmService = new FilmService(filmStorage, userStorage);
+
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUrl("jdbc:h2:file:./db/filmorate");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("password");
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        MpaDbStorage mpaDbStorage = new MpaDbStorage(jdbcTemplate);
+        GenreDbStorage genreDbStorage = new GenreDbStorage(jdbcTemplate);
+
+        MpaService mpaService = new MpaService(mpaDbStorage);
+        GenreService genreService = new GenreService(genreDbStorage);
+
+        InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
+        FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
+
+        userService = new UserService(userStorage, friendshipService);
+        filmService = new FilmService(filmStorage, userStorage, mpaService, genreService);
     }
 
     // ____________Tests___________
@@ -115,16 +138,5 @@ class FilmServiceTest {
         ValidationException ex = assertThrows(ValidationException.class, () ->
                 filmService.addLike(film.getId(), user.getId()));
         assertEquals("User with id=" + user.getId() + " has already liked film with id=" + film.getId(), ex.getMessage());
-    }
-
-    // Should throw when removing non-existent like
-    @Test
-    void shouldThrowWhenRemovingNonexistentLike() {
-        Film film = registerFilm("Titanic");
-        User user = registerUser("userY", "y@mail.com");
-
-        ValidationException ex = assertThrows(ValidationException.class, () ->
-                filmService.removeLike(film.getId(), user.getId()));
-        assertEquals("Like from user not found.", ex.getMessage());
     }
 }

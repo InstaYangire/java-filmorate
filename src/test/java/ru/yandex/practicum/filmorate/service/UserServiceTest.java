@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryFriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
@@ -33,7 +34,11 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new UserService(new InMemoryUserStorage());
+        InMemoryUserStorage userStorage = new InMemoryUserStorage();
+        InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
+        FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
+
+        service = new UserService(userStorage, friendshipService);
     }
 
     // ____________Tests___________
@@ -41,13 +46,19 @@ class UserServiceTest {
     // Test: Should add friend correctly
     @Test
     void shouldAddFriendSuccessfully() {
-        User user1 = registerUser("user1", "user1@example.com");
-        User user2 = registerUser("user2", "user2@example.com");
+        User user1 = service.addUser(makeValidUser("user1", "user1@example.com"));
+        User user2 = service.addUser(makeValidUser("user2", "user2@example.com"));
 
         service.addFriend(user1.getId(), user2.getId());
 
-        assertTrue(user1.getFriends().contains(user2.getId()));
-        assertTrue(user2.getFriends().contains(user1.getId()));
+        List<User> friendsOfUser1 = service.getFriends(user1.getId());
+        List<User> friendsOfUser2 = service.getFriends(user2.getId());
+
+        assertTrue(friendsOfUser1.stream()
+                .anyMatch(u -> u.getId() == user2.getId()));
+
+        assertFalse(friendsOfUser2.stream()
+                .anyMatch(u -> u.getId() == user1.getId()));
     }
 
     // Test: Should remove friend correctly
@@ -59,7 +70,9 @@ class UserServiceTest {
         service.addFriend(user1.getId(), user2.getId());
         service.removeFriend(user1.getId(), user2.getId());
 
-        assertFalse(user1.getFriends().contains(user2.getId()));
+        List<User> friendsOfUser2 = service.getFriends(user2.getId());
+        assertFalse(friendsOfUser2.stream()
+                .anyMatch(u -> u.getId() == user1.getId()));
         assertFalse(user2.getFriends().contains(user1.getId()));
     }
 
@@ -94,15 +107,20 @@ class UserServiceTest {
 
     // Test: Should throw when trying to add same friend again
     @Test
-    void shouldThrowWhenAddingDuplicateFriend() {
-        User user1 = registerUser("user1", "user1@example.com");
-        User user2 = registerUser("user2", "user2@example.com");
+    void shouldNotAddDuplicateFriendAgain() {
+        User user1 = service.addUser(makeValidUser("user1", "user1@example.com"));
+        User user2 = service.addUser(makeValidUser("user2", "user2@example.com"));
 
         service.addFriend(user1.getId(), user2.getId());
 
-        ValidationException exception = assertThrows(ValidationException.class, () ->
-                service.addFriend(user1.getId(), user2.getId()));
-        assertEquals("Users are already friends.", exception.getMessage());
+        assertDoesNotThrow(() -> service.addFriend(user1.getId(), user2.getId()));
+
+        List<Integer> friendIds = service.getFriends(user1.getId())
+                .stream()
+                .map(User::getId)
+                .toList();
+
+        assertEquals(List.of(user2.getId()), friendIds);
     }
 
     // Test: Should throw when trying to add oneself as a friend

@@ -2,16 +2,13 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
-
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 import static ru.yandex.practicum.filmorate.validator.UserValidator.validate;
 
@@ -19,16 +16,19 @@ import static ru.yandex.practicum.filmorate.validator.UserValidator.validate;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final FriendshipService friendshipService;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage, FriendshipService friendshipService) {
         this.userStorage = userStorage;
+        this.friendshipService = friendshipService;
     }
 
     //___________User____________
     // Creating a new user
     public User addUser(User user) {
         log.info("Received a request to add a new user: {}", user);
+        validate(user);
         User createdUser = userStorage.addUser(user);
         log.info("User added successfully: {}", createdUser);
         return createdUser;
@@ -65,32 +65,18 @@ public class UserService {
             throw new ValidationException("User cannot add themselves as a friend.");
         }
 
-        User user = userStorage.getUserById(userId)
-                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        friendshipService.addFriend(userId, friendId);
 
-        User friend = userStorage.getUserById(friendId)
-                .orElseThrow(() -> new NotFoundException("Friend with id=" + friendId + " not found."));
-
-        if (user.getFriends().contains(friendId)) {
-            throw new ValidationException("Users are already friends.");
-        }
-
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
         log.info("User with id={} added user with id={} as a friend.", userId, friendId);
     }
 
     // Removing a friend
     public User removeFriend(int userId, int friendId) {
 
+        friendshipService.removeFriend(userId, friendId);
+
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
-
-        User friend = userStorage.getUserById(friendId)
-                .orElseThrow(() -> new NotFoundException("Friend with id=" + friendId + " not found."));
-
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
 
         log.info("User with id={} removed user with id={} from friends.", userId, friendId);
         return user;
@@ -100,12 +86,7 @@ public class UserService {
     public List<User> getFriends(int userId) {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
-
-        List<User> friends = user.getFriends().stream()
-                .map(userStorage::getUserById)
-                .map(opt -> opt.orElse(null)) // т.к. getUserById теперь возвращает Optional
-                .filter(Objects::nonNull)
-                .toList();
+        List<User> friends = friendshipService.getFriends(userId);
 
         log.info("Request to get friends of user with id={}. Quantity: {}", userId, friends.size());
         return friends;
@@ -119,14 +100,7 @@ public class UserService {
         User other = userStorage.getUserById(otherId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + otherId + " not found."));
 
-        Set<Integer> commonIds = new HashSet<>(user.getFriends());
-        commonIds.retainAll(other.getFriends());
-
-        List<User> commonFriends = commonIds.stream()
-                .map(userStorage::getUserById)
-                .map(opt -> opt.orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+        List<User> commonFriends = friendshipService.getCommonFriends(userId, otherId);
 
         log.info("Request for common friends of users with id={} and id={}. Quantity: {}", userId, otherId, commonFriends.size());
         return commonFriends;
