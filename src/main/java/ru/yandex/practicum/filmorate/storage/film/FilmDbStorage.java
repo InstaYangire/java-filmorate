@@ -9,7 +9,10 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
+
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
@@ -68,22 +71,15 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Optional<Film> getFilmById(int id) {
         String sql = "SELECT * FROM films WHERE id = ?";
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs.getInt("id")), id);
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), id);
         return films.stream().findFirst();
     }
 
     // Getting all films
     @Override
     public List<Film> getAllFilms() {
-        String sql = "SELECT id FROM films ORDER BY id"; // whatever ID comes first after INSERT is bad, so ORDER BY is needed
-        List<Integer> ids = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getInt("id"));
-
-        List<Film> films = new ArrayList<>();
-        for (int id : ids) {
-            getFilmById(id).ifPresent(films::add);
-        }
-
-        return films;
+        String sql = "SELECT * FROM films ORDER BY id";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs));
     }
 
     // Adding a like to a film
@@ -112,21 +108,21 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
     }
 
-    // Mapping film by ID (used to load genres and mpa)
-    private Film mapRowToFilm(int filmId) {
-        String sql = "SELECT * FROM films WHERE id = ?";
-        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-            Film film = new Film();
-            film.setId(rs.getInt("id"));
-            film.setName(rs.getString("name"));
-            film.setDescription(rs.getString("description"));
-            film.setReleaseDate(rs.getDate("release_date").toLocalDate());
-            film.setDuration(rs.getInt("duration"));
-            film.setMpa(getMpaById(rs.getInt("mpa_id")));
-            film.setGenres(new HashSet<>(getGenresByFilmId(filmId)));
-            film.setLikes(getLikesByFilmId(filmId));
-            return film;
-        }, filmId);
+    // Mapping film directly from current ResultSet
+    private Film mapRowToFilm(ResultSet rs) throws SQLException {
+        int filmId = rs.getInt("id");
+
+        Film film = new Film();
+        film.setId(filmId);
+        film.setName(rs.getString("name"));
+        film.setDescription(rs.getString("description"));
+        film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+        film.setDuration(rs.getInt("duration"));
+        film.setMpa(getMpaById(rs.getInt("mpa_id")));
+        film.setGenres(new HashSet<>(getGenresByFilmId(filmId)));
+        film.setLikes(getLikesByFilmId(filmId));
+
+        return film;
     }
 
     // Saving genres to film_genres table

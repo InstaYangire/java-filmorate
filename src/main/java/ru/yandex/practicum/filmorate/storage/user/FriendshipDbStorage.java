@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
+
 import java.util.List;
 
 @Component
@@ -15,22 +16,36 @@ public class FriendshipDbStorage implements FriendshipStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Adding a new friendship (unconfirmed by default)
+    // ----------- Private helpers -----------
+
+    // Convert boolean "confirmed" into DB string value
+    private String toDbStatus(boolean confirmed) {
+        return confirmed ? "CONFIRMED" : "UNCONFIRMED";
+    }
+
+    // Convert DB string value into boolean "confirmed"
+    private boolean fromDbStatus(String status) {
+        return "CONFIRMED".equals(status);
+    }
+
+    // ----------- CRUD methods -----------
+
+    // Adding a new friendship (status is stored as CONFIRMED/UNCONFIRMED)
     @Override
     public void add(Friendship friendship) {
         String sql = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, ?)";
         jdbcTemplate.update(sql,
                 friendship.getUserId(),
                 friendship.getFriendId(),
-                friendship.isConfirmed() ? "CONFIRMED" : "UNCONFIRMED");
+                toDbStatus(friendship.isConfirmed()));
     }
 
-    // Updating friendship status (e.g. to CONFIRMED)
+    // Updating friendship status (switching between CONFIRMED and UNCONFIRMED)
     @Override
     public void update(Friendship friendship) {
         String sql = "UPDATE friendships SET status = ? WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql,
-                friendship.isConfirmed() ? "CONFIRMED" : "UNCONFIRMED",
+                toDbStatus(friendship.isConfirmed()),
                 friendship.getUserId(),
                 friendship.getFriendId());
     }
@@ -44,14 +59,14 @@ public class FriendshipDbStorage implements FriendshipStorage {
                 friendship.getFriendId());
     }
 
-    // Getting all friendships of a user
+    // Getting all friendships of a given user
     @Override
     public List<Friendship> getFriendshipsByUserId(int userId) {
-        String sql = "SELECT * FROM friendships WHERE user_id = ?"; // "AND status = 'CONFIRMED'";
+        String sql = "SELECT * FROM friendships WHERE user_id = ?";
         return jdbcTemplate.query(sql, (rs, rowNum) -> new Friendship(
                 rs.getInt("user_id"),
                 rs.getInt("friend_id"),
-                true
+                fromDbStatus(rs.getString("status"))
         ), userId);
     }
 }
