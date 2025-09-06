@@ -2,10 +2,14 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
@@ -17,7 +21,18 @@ class FilmServiceValidationTest {
 
     @BeforeEach
     void setUp() {
-        filmService = new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage());
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUrl("jdbc:h2:file:./db/filmorate");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("password");
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        filmService = new FilmService(
+                new InMemoryFilmStorage(),
+                new InMemoryUserStorage(),
+                new MpaService(new MpaDbStorage(jdbcTemplate)),
+                new GenreService(new GenreDbStorage(jdbcTemplate)));
     }
 
     // ____________Helpers___________
