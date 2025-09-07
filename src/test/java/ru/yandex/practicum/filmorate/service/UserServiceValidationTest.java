@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryFriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
@@ -17,7 +18,11 @@ class UserServiceValidationTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(new InMemoryUserStorage());
+        InMemoryUserStorage userStorage = new InMemoryUserStorage();
+        InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
+        FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
+
+        userService = new UserService(userStorage, friendshipService);
     }
 
     // ____________Helpers___________
