@@ -25,7 +25,8 @@ public class FilmDbStorage implements FilmStorage {
     // Adding a new film
     @Override
     public Film addFilm(Film film) {
-        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id, director_id)" +
+                " VALUES (?, ?, ?, ?, ?, ?)";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -35,6 +36,7 @@ public class FilmDbStorage implements FilmStorage {
             stmt.setObject(3, film.getReleaseDate());
             stmt.setInt(4, film.getDuration());
             stmt.setInt(5, film.getMpa().getId());
+            stmt.setObject(6, film.getDirectorId());
             return stmt;
         }, keyHolder);
 
@@ -42,13 +44,21 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(filmId);
 
         updateFilmGenres(film); // Save genres
+
+        // Save connection between director and film in table film_directors
+        if (film.getDirectorId() != null) {
+            jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                    film.getId(), film.getDirectorId());
+        }
+
         return getFilmById(filmId).orElseThrow(() -> new NotFoundException("Film not found after creation."));
     }
 
     // Updating an existing film
     @Override
     public Film updateFilm(Film film) {
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
+        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ?, " +
+                "director_id = ? WHERE id = ?";
 
         int rows = jdbcTemplate.update(sql,
                 film.getName(),
@@ -56,6 +66,7 @@ public class FilmDbStorage implements FilmStorage {
                 film.getReleaseDate(),
                 film.getDuration(),
                 film.getMpa().getId(),
+                film.getDirectorId(),
                 film.getId());
 
         if (rows == 0) {
@@ -64,6 +75,13 @@ public class FilmDbStorage implements FilmStorage {
 
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         updateFilmGenres(film); // Update genres
+
+        jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", film.getId());
+        if (film.getDirectorId() != null) {
+            jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                    film.getId(), film.getDirectorId());
+        } // Update connection with director
+
         return getFilmById(film.getId()).orElseThrow(() -> new NotFoundException("Film not found after update."));
     }
 
@@ -119,6 +137,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setReleaseDate(rs.getDate("release_date").toLocalDate());
         film.setDuration(rs.getInt("duration"));
         film.setMpa(getMpaById(rs.getInt("mpa_id")));
+        film.setDirectorId(rs.getObject("director_id", Integer.class)); //Added director to film
         film.setGenres(new HashSet<>(getGenresByFilmId(filmId)));
         film.setLikes(getLikesByFilmId(filmId));
 

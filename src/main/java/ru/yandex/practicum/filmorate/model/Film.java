@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -20,4 +21,5 @@ public class Film {
     private MpaRating mpa;
     private Set<Genre> genres = new LinkedHashSet<>();
     private Set<Integer> likes = new HashSet<>();
+    private Integer directorId; //Added connection director-film
 }

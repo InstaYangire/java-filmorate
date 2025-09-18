@@ -32,7 +32,8 @@ class FilmServiceValidationTest {
                 new InMemoryFilmStorage(),
                 new InMemoryUserStorage(),
                 new MpaService(new MpaDbStorage(jdbcTemplate)),
-                new GenreService(new GenreDbStorage(jdbcTemplate)));
+                new GenreService(new GenreDbStorage(jdbcTemplate)),
+                jdbcTemplate);
     }
 
     // ____________Helpers___________

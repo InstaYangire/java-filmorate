@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
@@ -25,16 +26,18 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaService mpaService;
     private final GenreService genreService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
                        @Qualifier("userDbStorage") UserStorage userStorage,
                        @Qualifier("mpaService") MpaService mpaService,
-                       @Qualifier("genreService") GenreService genreService) {
+                       @Qualifier("genreService") GenreService genreService, JdbcTemplate jdbcTemplate) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaService = mpaService;
         this.genreService = genreService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     // ___________Films___________
@@ -120,6 +123,14 @@ public class FilmService {
                     .map(genre -> genreService.getGenreById(genre.getId()))
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             film.setGenres(validatedGenres);
+        }
+
+        if (film.getDirectorId() != null) {
+            String sql = "SELECT COUNT(*) FROM directors WHERE id = ?";
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, film.getDirectorId());
+            if (count == null || count == 0) {
+                throw new NotFoundException("Director with id=" + film.getDirectorId() + " not found.");
+            }
         }
     }
 }

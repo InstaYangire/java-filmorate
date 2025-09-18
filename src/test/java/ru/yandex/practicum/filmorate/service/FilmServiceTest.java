@@ -77,7 +77,7 @@ class FilmServiceTest {
         FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
 
         userService = new UserService(userStorage, friendshipService);
-        filmService = new FilmService(filmStorage, userStorage, mpaService, genreService);
+        filmService = new FilmService(filmStorage, userStorage, mpaService, genreService, jdbcTemplate);
     }
 
     // ____________Tests___________
