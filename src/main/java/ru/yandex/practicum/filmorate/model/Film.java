@@ -19,6 +19,5 @@ public class Film {
     private MpaRating mpa;
     private Set<Genre> genres = new LinkedHashSet<>();
     private Set<Integer> likes = new HashSet<>();
-    private Integer directorId; //Added connection director-film
     private List<Director> directors = new ArrayList<>();
 }

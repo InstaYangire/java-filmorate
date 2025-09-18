@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
@@ -128,12 +129,11 @@ public class FilmService {
             film.setGenres(validatedGenres);
         }
 
-        if (film.getDirectorId() != null) {
-            String sql = "SELECT COUNT(*) FROM directors WHERE id = ?";
-            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, film.getDirectorId());
-            if (count == 0) {
-                throw new NotFoundException("Director with id=" + film.getDirectorId() + " not found.");
-            }
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            List<Director> validatedDirectors = film.getDirectors().stream()
+                    .map(director -> directorService.getDirectorById(director.getId()))
+                    .collect(Collectors.toList());
+            film.setDirectors(validatedDirectors);
         }
     }
 

@@ -37,10 +37,7 @@ public class DirectorService {
     public Director updateDirector(Director director) {
         log.info("Request to update director: {}", director);
         validateDirector(director);
-        Director existingDirector = getDirectorById(director.getId());
-        if (existingDirector == null) {
-            throw new NotFoundException("Director with id=" + director.getId() + " not found.");
-        }
+        getDirectorById(director.getId());
 
         return directorStorage.update(director);
     }

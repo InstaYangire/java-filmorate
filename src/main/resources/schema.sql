@@ -30,9 +30,7 @@ CREATE TABLE IF NOT EXISTS films (
     release_date DATE,
     duration INT,
     mpa_id INT,
-    director_id INT,
-    CONSTRAINT fk_mpa FOREIGN KEY (mpa_id) REFERENCES mpa_ratings(id),
-    CONSTRAINT fk_director FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE SET NULL
+    CONSTRAINT fk_mpa FOREIGN KEY (mpa_id) REFERENCES mpa_ratings(id)
 );
 
 CREATE TABLE IF NOT EXISTS film_likes (

@@ -7,13 +7,11 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -22,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @JdbcTest
 @AutoConfigureTestDatabase
-@Import({FilmDbStorage.class, GenreDbStorage.class, MpaDbStorage.class, UserDbStorage.class})
+@Import({FilmDbStorage.class, GenreDbStorage.class, MpaDbStorage.class, UserDbStorage.class, DirectorDbStorage.class})
 class FilmDbStorageTest {
 
     @Autowired
@@ -30,6 +28,9 @@ class FilmDbStorageTest {
 
     @Autowired
     private UserDbStorage userDbStorage;
+
+    @Autowired
+    private DirectorDbStorage directorDbStorage;
 
     // ----------- Helpers -----------
 
@@ -42,6 +43,7 @@ class FilmDbStorageTest {
         film.setDuration(148);
         film.setMpa(new MpaRating(1, null)); // Only ID is needed
         film.setGenres(Set.of(new Genre(1, null))); // Only IDs are needed
+        film.setDirectors(new ArrayList<>());
         return film;
     }
 
@@ -53,6 +55,12 @@ class FilmDbStorageTest {
         user.setName("Test User");
         user.setBirthday(LocalDate.of(2000, 1, 1));
         return userDbStorage.addUser(user);
+    }
+
+    private Director createSampleDirector() {
+        Director director = new Director();
+        director.setName("Test Director");
+        return directorDbStorage.create(director);
     }
 
     // ----------- Tests -----------
@@ -68,6 +76,7 @@ class FilmDbStorageTest {
         assertEquals(film.getReleaseDate(), savedFilm.getReleaseDate());
         assertEquals(film.getDuration(), savedFilm.getDuration());
         assertEquals(film.getMpa().getId(), savedFilm.getMpa().getId());
+        assertNotNull(savedFilm.getDirectors());
     }
 
     // Test: Film should be found by its ID
@@ -173,5 +182,18 @@ class FilmDbStorageTest {
                 "Like not found: filmId=" + savedFilm.getId() + ", userId=" + savedUser.getId(),
                 ex.getMessage()
         );
+    }
+
+    @Test
+    void shouldHandleFilmWithDirectors() {
+        Director director = createSampleDirector();
+        Film film = createSampleFilm();
+        film.setDirectors(new ArrayList<>(List.of(director)));
+
+        Film savedFilm = filmDbStorage.addFilm(film);
+
+        assertNotNull(savedFilm.getDirectors());
+        assertEquals(1, savedFilm.getDirectors().size());
+        assertEquals(director.getId(), savedFilm.getDirectors().get(0).getId());
     }
 }
