@@ -109,15 +109,17 @@ class DirectorDbStorageTest {
 
     @Test
     void shouldUpdateDirector() {
-        jdbcTemplate.update("INSERT INTO directors (name) VALUES ('Old Name')");
+        Director directorToCreate = new Director();
+        directorToCreate.setName("Old Name");
+        Director createdDirector = directorStorage.create(directorToCreate);
 
-        Director director = new Director(1, "Updated Name");
-        Director updated = directorStorage.update(director);
+        Director directorToUpdate = new Director(createdDirector.getId(), "Updated Name");
+        Director updated = directorStorage.update(directorToUpdate);
 
         assertEquals("Updated Name", updated.getName());
 
         // Verify update in database
-        Optional<Director> found = directorStorage.findById(1);
+        Optional<Director> found = directorStorage.findById(createdDirector.getId());
         assertTrue(found.isPresent());
         assertEquals("Updated Name", found.get().getName());
     }

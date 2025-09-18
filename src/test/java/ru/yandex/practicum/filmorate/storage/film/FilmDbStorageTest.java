@@ -63,6 +63,12 @@ class FilmDbStorageTest {
         return directorDbStorage.create(director);
     }
 
+    private Director createSampleDirector(String name) {
+        Director director = new Director();
+        director.setName(name);
+        return directorDbStorage.create(director);
+    }
+
     // ----------- Tests -----------
 
     // Test: Film should be added successfully
@@ -195,5 +201,77 @@ class FilmDbStorageTest {
         assertNotNull(savedFilm.getDirectors());
         assertEquals(1, savedFilm.getDirectors().size());
         assertEquals(director.getId(), savedFilm.getDirectors().get(0).getId());
+    }
+
+    @Test
+    void shouldHandleFilmWithMultipleDirectors() {
+        Director director1 = createSampleDirector("Christopher Nolan");
+        Director director2 = createSampleDirector("Hans Zimmer");
+        Director director3 = createSampleDirector("Emma Thomas");
+
+        Film film = createSampleFilm();
+        film.setName("Interstellar");
+        film.setDirectors(new ArrayList<>(List.of(director1, director2, director3)));
+
+        Film savedFilm = filmDbStorage.addFilm(film);
+
+        assertNotNull(savedFilm.getDirectors());
+        assertEquals(3, savedFilm.getDirectors().size());
+        assertTrue(savedFilm.getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("Christopher Nolan")));
+        assertTrue(savedFilm.getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("Hans Zimmer")));
+        assertTrue(savedFilm.getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("Emma Thomas")));
+
+        Optional<Film> retrievedFilmOpt = filmDbStorage.getFilmById(savedFilm.getId());
+        assertTrue(retrievedFilmOpt.isPresent());
+
+        Film retrievedFilm = retrievedFilmOpt.get();
+        assertEquals(3, retrievedFilm.getDirectors().size());
+    }
+
+    @Test
+    void shouldUpdateFilmWithEmptyDirectorsList() {
+        Director director = createSampleDirector("Test Director");
+        Film film = createSampleFilm();
+        film.setDirectors(new ArrayList<>(List.of(director)));
+        Film savedFilm = filmDbStorage.addFilm(film);
+
+        assertEquals(1, savedFilm.getDirectors().size());
+
+        savedFilm.setDirectors(new ArrayList<>());
+        Film updatedFilm = filmDbStorage.updateFilm(savedFilm);
+
+        assertNotNull(updatedFilm.getDirectors());
+        assertTrue(updatedFilm.getDirectors().isEmpty());
+
+        Optional<Film> retrievedFilmOpt = filmDbStorage.getFilmById(updatedFilm.getId());
+        assertTrue(retrievedFilmOpt.isPresent());
+
+        Film retrievedFilm = retrievedFilmOpt.get();
+        assertTrue(retrievedFilm.getDirectors().isEmpty());
+    }
+
+    @Test
+    void shouldUpdateFilmWithNewDirectors() {
+        Director director1 = createSampleDirector("Director 1");
+        Film film = createSampleFilm();
+        film.setDirectors(new ArrayList<>(List.of(director1)));
+        Film savedFilm = filmDbStorage.addFilm(film);
+
+        Director director2 = createSampleDirector("New Director 1");
+        Director director3 = createSampleDirector("New Director 2");
+
+        savedFilm.setDirectors(new ArrayList<>(List.of(director2, director3)));
+        Film updatedFilm = filmDbStorage.updateFilm(savedFilm);
+
+        assertEquals(2, updatedFilm.getDirectors().size());
+        assertTrue(updatedFilm.getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("New Director 1")));
+        assertTrue(updatedFilm.getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("New Director 2")));
+        assertFalse(updatedFilm.getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("Director 1")));
     }
 }
