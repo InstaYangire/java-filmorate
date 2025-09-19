@@ -7,6 +7,10 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.DirectorStorage;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.film.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.MpaDbStorage;
@@ -28,11 +32,27 @@ class FilmServiceValidationTest {
         dataSource.setPassword("password");
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        MpaDbStorage mpaDbStorage = new MpaDbStorage(jdbcTemplate);
+        GenreDbStorage genreDbStorage = new GenreDbStorage(jdbcTemplate);
+        MpaService mpaService = new MpaService(mpaDbStorage);
+        GenreService genreService = new GenreService(genreDbStorage);
+
+        FilmStorage filmStorage = new InMemoryFilmStorage();
+        UserStorage userStorage = new InMemoryUserStorage();
+
+        DirectorStorage directorStorage = new DirectorDbStorage(jdbcTemplate); // Нужно создать этот класс
+        DirectorService directorService = new DirectorService(directorStorage);
+
         filmService = new FilmService(
-                new InMemoryFilmStorage(),
-                new InMemoryUserStorage(),
-                new MpaService(new MpaDbStorage(jdbcTemplate)),
-                new GenreService(new GenreDbStorage(jdbcTemplate)));
+                filmStorage,
+                userStorage,
+                mpaService,
+                genreService,
+                directorService,
+                jdbcTemplate
+        );
+
     }
 
     // ____________Helpers___________

@@ -3,14 +3,17 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,16 +28,20 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaService mpaService;
     private final GenreService genreService;
+    private final DirectorService directorService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
                        @Qualifier("userDbStorage") UserStorage userStorage,
                        @Qualifier("mpaService") MpaService mpaService,
-                       @Qualifier("genreService") GenreService genreService) {
+                       @Qualifier("genreService") GenreService genreService, DirectorService directorService, JdbcTemplate jdbcTemplate) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaService = mpaService;
         this.genreService = genreService;
+        this.directorService = directorService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     // ___________Films___________
@@ -121,5 +128,31 @@ public class FilmService {
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             film.setGenres(validatedGenres);
         }
+
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            List<Director> validatedDirectors = film.getDirectors().stream()
+                    .map(director -> directorService.getDirectorById(director.getId()))
+                    .collect(Collectors.toList());
+            film.setDirectors(validatedDirectors);
+        }
+    }
+
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        directorService.getDirectorById(directorId);
+
+        List<Film> filmsWithDirector = filmStorage.getAllFilms().stream()
+                .filter(film -> film.getDirectors() != null &&
+                        film.getDirectors().stream()
+                                .anyMatch(director -> director.getId() == directorId))
+                .collect(Collectors.toList());
+
+        if ("year".equalsIgnoreCase(sortBy)) {
+            filmsWithDirector.sort(Comparator.comparing(Film::getReleaseDate));
+        } else {
+            filmsWithDirector.sort((f1, f2) ->
+                    Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
+        }
+
+        return filmsWithDirector;
     }
 }

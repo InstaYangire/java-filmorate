@@ -8,6 +8,13 @@ CREATE TABLE IF NOT EXISTS genres (
     name VARCHAR NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS directors (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR NOT NULL
+);
+
+ALTER TABLE directors ALTER COLUMN id RESTART WITH 1;
+
 CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR NOT NULL,
@@ -49,4 +56,10 @@ CREATE TABLE IF NOT EXISTS friendships (
     PRIMARY KEY (user_id, friend_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS film_directors (
+    film_id INTEGER REFERENCES films(id) ON DELETE CASCADE,
+    director_id INTEGER REFERENCES directors(id) ON DELETE CASCADE,
+    PRIMARY KEY (film_id, director_id)
 );

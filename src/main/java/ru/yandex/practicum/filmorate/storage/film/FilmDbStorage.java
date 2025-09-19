@@ -25,7 +25,8 @@ public class FilmDbStorage implements FilmStorage {
     // Adding a new film
     @Override
     public Film addFilm(Film film) {
-        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id)" +
+                " VALUES (?, ?, ?, ?, ?)";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -42,13 +43,23 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(filmId);
 
         updateFilmGenres(film); // Save genres
+
+        // Save connection between director and film in table film_directors
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            for (Director director : film.getDirectors()) {
+                jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                        film.getId(), director.getId());
+            }
+        }
+
         return getFilmById(filmId).orElseThrow(() -> new NotFoundException("Film not found after creation."));
     }
 
     // Updating an existing film
     @Override
     public Film updateFilm(Film film) {
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
+        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ?" +
+                " WHERE id = ?";
 
         int rows = jdbcTemplate.update(sql,
                 film.getName(),
@@ -64,6 +75,15 @@ public class FilmDbStorage implements FilmStorage {
 
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         updateFilmGenres(film); // Update genres
+
+        jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", film.getId());
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            for (Director director : film.getDirectors()) {
+                jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                        film.getId(), director.getId());
+            }
+        } // Update connection with director
+
         return getFilmById(film.getId()).orElseThrow(() -> new NotFoundException("Film not found after update."));
     }
 
@@ -108,6 +128,14 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
     }
 
+    @Override
+    public List<Film> getFilmsByDirector(int directorId) {
+        String sql = "SELECT f.* FROM films f " +
+                "JOIN film_directors fd ON f.id = fd.film_id " +
+                "WHERE fd.director_id = ? ORDER BY f.id";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), directorId);
+    }
+
     // Mapping film directly from current ResultSet
     private Film mapRowToFilm(ResultSet rs) throws SQLException {
         int filmId = rs.getInt("id");
@@ -121,6 +149,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setMpa(getMpaById(rs.getInt("mpa_id")));
         film.setGenres(new HashSet<>(getGenresByFilmId(filmId)));
         film.setLikes(getLikesByFilmId(filmId));
+        film.setDirectors(getDirectorsByFilmId(filmId)); //Adding directors
 
         return film;
     }
@@ -155,4 +184,14 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT user_id FROM film_likes WHERE film_id = ?";
         return new HashSet<>(jdbcTemplate.query(sql, (rs, rowNum) -> rs.getInt("user_id"), filmId));
     }
+
+    private List<Director> getDirectorsByFilmId(int filmId) {
+        String sql = "SELECT d.* FROM directors d " +
+                "JOIN film_directors fd ON d.id = fd.director_id " +
+                "WHERE fd.film_id = ?";
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
+                new Director(rs.getInt("id"), rs.getString("name")), filmId);
+    }
+
+
 }
