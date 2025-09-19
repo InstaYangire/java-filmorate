@@ -32,7 +32,7 @@ public class FilmController {
         return filmService.updateFilm(film);
     }
 
-    // Getting a film bi id
+    // Getting a film by id
     @GetMapping("/{id}")
     public Film getFilmById(@PathVariable int id) {
         return filmService.getFilmById(id);
@@ -61,11 +61,5 @@ public class FilmController {
     @GetMapping("/popular")
     public List<Film> getPopular(@RequestParam(defaultValue = "10") int count) {
         return filmService.getPopular(count);
-    }
-
-    @GetMapping("/director/{directorId}")
-    public List<Film> getFilmsByDirector(@PathVariable int directorId,
-                                         @RequestParam(defaultValue = "likes") String sortBy) {
-        return filmService.getFilmsByDirector(directorId, sortBy);
     }
 }

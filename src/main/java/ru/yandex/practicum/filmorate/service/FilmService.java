@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 
 import java.util.Comparator;
 import java.util.List;
@@ -113,6 +114,13 @@ public class FilmService {
                 .toList();
         log.info("Request for top {} popular films received. Found: {}", count, sorted.size());
         return sorted;
+    }
+
+    // Getting common films
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        List<Film> listFilms = filmStorage.getCommonFilms(userId, friendId);
+        log.info("User {} and user {} have {} common films.", userId, friendId, listFilms.size());
+        return listFilms;
     }
 
     // Validate and replace MPA and genres from services
