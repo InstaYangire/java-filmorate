@@ -212,5 +212,47 @@ public class FilmDbStorage implements FilmStorage {
                 new Director(rs.getInt("id"), rs.getString("name")), filmId);
     }
 
+    // Searching films by title, description, or director
+    public List<Film> searchFilms(String query, List<String> by) {
+        if (query == null || query.isBlank()) {
+            return Collections.emptyList();
+        }
 
+        String searchPattern = "%" + query.toLowerCase() + "%";
+
+        for (String param : by) {
+            if (!List.of("title", "description", "director").contains(param)) {
+                throw new ValidationException("Invalid search parameter: " + param);
+            }
+        }
+
+        List<String> conditions = new ArrayList<>();
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.name) LIKE ?");
+        }
+        if (by.contains("description")) {
+            conditions.add("LOWER(f.description) LIKE ?");
+        }
+        if (by.contains("director")) {
+            conditions.add("LOWER(d.name) LIKE ?");
+        }
+
+        String whereClause = String.join(" OR ", conditions);
+
+        String sql = """
+        SELECT DISTINCT f.*
+        FROM films f
+        LEFT JOIN film_directors fd ON f.id = fd.film_id
+        LEFT JOIN directors d ON fd.director_id = d.id
+        WHERE %s
+        GROUP BY f.id
+        """.formatted(whereClause);
+
+        List<Object> params = new ArrayList<>();
+        for (int i = 0; i < conditions.size(); i++) {
+            params.add(searchPattern);
+        }
+
+        return jdbcTemplate.query(sql, params.toArray(), (rs, rowNum) -> mapRowToFilm(rs));
+    }
 }

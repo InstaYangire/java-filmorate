@@ -80,6 +80,51 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("Movie with id=" + id + " not found."));
     }
 
+    // Getting films by director
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        directorService.getDirectorById(directorId);
+
+        List<Film> filmsWithDirector = filmStorage.getAllFilms().stream()
+                .filter(film -> film.getDirectors() != null &&
+                        film.getDirectors().stream()
+                                .anyMatch(director -> director.getId() == directorId))
+                .collect(Collectors.toList());
+
+        if ("year".equalsIgnoreCase(sortBy)) {
+            filmsWithDirector.sort(Comparator.comparing(Film::getReleaseDate));
+        } else {
+            filmsWithDirector.sort((f1, f2) ->
+                    Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
+        }
+
+        return filmsWithDirector;
+    }
+
+    // Searching films by query and parameters (title, description, director)
+    public List<Film> searchFilms(String query, List<String> by) {
+        log.info("Search request received. Query='{}', by={}", query, by);
+
+        if (by == null || by.isEmpty()) {
+            throw new ru.yandex.practicum.filmorate.exception.ValidationException(
+                    "Search parameter 'by' cannot be empty."
+            );
+        }
+
+        List<String> allowed = List.of("title", "description", "director");
+
+        for (String param : by) {
+            if (!allowed.contains(param.toLowerCase())) {
+                throw new ru.yandex.practicum.filmorate.exception.ValidationException(
+                        "Invalid search parameter: " + param
+                );
+            }
+        }
+
+        List<Film> results = filmStorage.searchFilms(query, by);
+        log.info("Search completed. Found {} films.", results.size());
+        return results;
+    }
+
     //___________Likes__________
     // Adding a like to a movie
     public void addLike(int filmId, int userId) {
@@ -146,24 +191,5 @@ public class FilmService {
                     .collect(Collectors.toList());
             film.setDirectors(validatedDirectors);
         }
-    }
-
-    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
-        directorService.getDirectorById(directorId);
-
-        List<Film> filmsWithDirector = filmStorage.getAllFilms().stream()
-                .filter(film -> film.getDirectors() != null &&
-                        film.getDirectors().stream()
-                                .anyMatch(director -> director.getId() == directorId))
-                .collect(Collectors.toList());
-
-        if ("year".equalsIgnoreCase(sortBy)) {
-            filmsWithDirector.sort(Comparator.comparing(Film::getReleaseDate));
-        } else {
-            filmsWithDirector.sort((f1, f2) ->
-                    Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
-        }
-
-        return filmsWithDirector;
     }
 }
