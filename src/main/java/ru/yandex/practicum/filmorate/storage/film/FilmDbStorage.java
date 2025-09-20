@@ -106,7 +106,7 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getCommonFilms(int userId, int friendId) {
         String sql = """
-                SELECT f.id AS film_id, f.name AS film_name, f.description, f.release_date, f.duration, 
+                SELECT f.id AS film_id, f.name AS film_name, f.description, f.release_date, f.duration,
                 m.id AS mpa_id, m.name AS mpa_name
                 FROM films f
                 JOIN mpa_ratings m ON f.mpa_id = m.id
