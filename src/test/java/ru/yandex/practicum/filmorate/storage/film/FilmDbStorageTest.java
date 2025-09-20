@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -121,6 +122,83 @@ class FilmDbStorageTest {
         assertFalse(films.isEmpty());
         assertTrue(likes.contains(user.getId()));
         assertTrue(likes.contains(friend.getId()));
+    }
+
+    // Test: Few common films should be returned
+    @Test
+    void shouldReturnFewCommonFilms() {
+        User user = createSampleUser();
+        User friend = createSampleUser();
+        Film film1 = createSampleFilm();
+        Film film2 = createSampleFilm();
+        Film film3 = createSampleFilm();
+
+        Film savedFilm1 = filmDbStorage.addFilm(film1);
+        Film savedFilm2 = filmDbStorage.addFilm(film2);
+        Film savedFilm3 = filmDbStorage.addFilm(film3);
+
+        // Both users liked all three films
+        filmDbStorage.addLike(savedFilm1.getId(), user.getId());
+        filmDbStorage.addLike(savedFilm1.getId(), friend.getId());
+        filmDbStorage.addLike(savedFilm2.getId(), user.getId());
+        filmDbStorage.addLike(savedFilm2.getId(), friend.getId());
+        filmDbStorage.addLike(savedFilm3.getId(), user.getId());
+        filmDbStorage.addLike(savedFilm3.getId(), friend.getId());
+
+        List<Film> commonFilms = filmDbStorage.getCommonFilms(user.getId(), friend.getId());
+
+        // Checking that 3 films returned
+        assertEquals(3, commonFilms.size());
+
+        Set<Integer> returnedFilmIds = commonFilms.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        // Checking that all films returned
+        assertTrue(returnedFilmIds.contains(savedFilm1.getId()));
+        assertTrue(returnedFilmIds.contains(savedFilm2.getId()));
+        assertTrue(returnedFilmIds.contains(savedFilm3.getId()));
+    }
+
+    // Test: Only common films should be returned
+    @Test
+    void shouldReturnOnlyCommonFilms() {
+        User user = createSampleUser();
+        User friend = createSampleUser();
+
+        // Common films
+        Film commonFilm1 = createSampleFilm();
+        Film commonFilm2 = createSampleFilm();
+
+        // Film that likes only user/friend
+        Film userOnlyFilm = createSampleFilm();
+        Film friendOnlyFilm = createSampleFilm();
+
+        Film savedCommon1 = filmDbStorage.addFilm(commonFilm1);
+        Film savedCommon2 = filmDbStorage.addFilm(commonFilm2);
+        Film savedUserOnly = filmDbStorage.addFilm(userOnlyFilm);
+        Film savedFriendOnly = filmDbStorage.addFilm(friendOnlyFilm);
+        filmDbStorage.addLike(savedCommon1.getId(), user.getId());
+        filmDbStorage.addLike(savedCommon2.getId(), user.getId());
+        filmDbStorage.addLike(savedUserOnly.getId(), user.getId());
+        filmDbStorage.addLike(savedCommon1.getId(), friend.getId());
+        filmDbStorage.addLike(savedCommon2.getId(), friend.getId());
+        filmDbStorage.addLike(savedFriendOnly.getId(), friend.getId());
+
+        List<Film> commonFilms = filmDbStorage.getCommonFilms(user.getId(), friend.getId());
+
+        // Checking that there should be only 2 common films
+        assertEquals(2, commonFilms.size());
+
+        Set<Integer> commonFilmIds = commonFilms.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        // Checking that only common films returned
+        assertTrue(commonFilmIds.contains(savedCommon1.getId()));
+        assertTrue(commonFilmIds.contains(savedCommon2.getId()));
+        assertFalse(commonFilmIds.contains(savedUserOnly.getId()));
+        assertFalse(commonFilmIds.contains(savedFriendOnly.getId()));
     }
 
     // Test: Film should be updated successfully
