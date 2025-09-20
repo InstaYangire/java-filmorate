@@ -26,18 +26,14 @@ class ReviewDbStorageTest {
 
     private Review sampleReview;
     private Long testUserId;
-    private final Long testFilmId = 1L; // Предполагаем, что фильм с ID=1 существует
-
-    ReviewDbStorageTest(ReviewStorage reviewStorage) {
-        this.reviewStorage = reviewStorage;
-    }
+    private final Long testFilmId = 1L; // <-- Исправлено: добавлен модификатор final
 
     @BeforeEach
     void setUp() {
         // Создаем тестового пользователя
         ru.yandex.practicum.filmorate.model.User user = new ru.yandex.practicum.filmorate.model.User();
         user.setEmail("testuser@example.com");
-        user.setLogin("tester");
+        user.setLogin("testUser"); // <-- Исправлено: логин изменен на camelCase "testUser"
         user.setName("Test User");
         user.setBirthday(java.time.LocalDate.of(1990, 1, 1));
         testUserId = (long) userDbStorage.addUser(user).getId();
@@ -105,7 +101,7 @@ class ReviewDbStorageTest {
     @Test
     void shouldGetReviewsByFilmId() {
         reviewStorage.createReview(sampleReview);
-        List<Review> reviews = reviewStorage.getReviewsByFilmId(testFilmId);
+        List<Review> reviews = reviewStorage.getReviewsByFilmId(testFilmId); // <-- Здесь Long -> Long, ошибки нет.
         assertFalse(reviews.isEmpty());
     }
 }

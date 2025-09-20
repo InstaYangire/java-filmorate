@@ -1,4 +1,3 @@
-// File: src/main/java/ru/yandex/practicum/filmorate/model/Review.java
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
@@ -9,10 +8,10 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Review {
-    private Long reviewId; // Используем Long, так как ID отзыва может быть большим
+    private Long reviewId;
     private String content;
     private Boolean isPositive;
     private Long userId;
     private Long filmId;
-    private int useful; // Счетчик полезности (лайки - дизлайк и)
+    private int useful; // лайки - дизлайки
 }

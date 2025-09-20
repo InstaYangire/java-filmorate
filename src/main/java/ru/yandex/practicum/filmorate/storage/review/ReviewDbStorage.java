@@ -7,7 +7,9 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -20,9 +22,19 @@ import java.util.Optional;
 public class ReviewDbStorage implements ReviewStorage {
 
     private final JdbcTemplate jdbcTemplate;
+    private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
 
     @Override
     public Review createReview(Review review) {
+        // Валидация существования пользователя и фильма
+        if (!userStorage.getUserById(Math.toIntExact(review.getUserId())).isPresent()) {
+            throw new NotFoundException("User with id=" + review.getUserId() + " not found.");
+        }
+        if (!filmStorage.getFilmById(Math.toIntExact(review.getFilmId())).isPresent()) {
+            throw new NotFoundException("Film with id=" + review.getFilmId() + " not found.");
+        }
+
         String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id) VALUES (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
