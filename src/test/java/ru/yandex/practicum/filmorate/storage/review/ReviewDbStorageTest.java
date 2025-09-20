@@ -26,14 +26,18 @@ class ReviewDbStorageTest {
 
     private Review sampleReview;
     private Long testUserId;
-    private Long testFilmId = 1L; // Предполагаем, что фильм с ID=1 существует
+    private final Long testFilmId = 1L; // Предполагаем, что фильм с ID=1 существует
+
+    ReviewDbStorageTest(ReviewStorage reviewStorage) {
+        this.reviewStorage = reviewStorage;
+    }
 
     @BeforeEach
     void setUp() {
         // Создаем тестового пользователя
         ru.yandex.practicum.filmorate.model.User user = new ru.yandex.practicum.filmorate.model.User();
         user.setEmail("testuser@example.com");
-        user.setLogin("testuser");
+        user.setLogin("tester");
         user.setName("Test User");
         user.setBirthday(java.time.LocalDate.of(1990, 1, 1));
         testUserId = (long) userDbStorage.addUser(user).getId();
