@@ -50,6 +50,22 @@ public class FilmController {
         return filmService.getCommonFilms(userId, friendId);
     }
 
+    // Getting films by director
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(@PathVariable int directorId,
+                                         @RequestParam(defaultValue = "likes") String sortBy) {
+        return filmService.getFilmsByDirector(directorId, sortBy);
+    }
+
+    // Searching films by query and parameters (title, description, director)
+    @GetMapping("/search")
+    public List<Film> searchFilms(
+            @RequestParam String query,
+            @RequestParam List<String> by) {
+        log.info("Received request to search films. Query='{}', by={}", query, by);
+        return filmService.searchFilms(query, by);
+    }
+
     //___________Likes__________
     // Adding a like to a movie
     @PutMapping("/{id}/like/{userId}")
@@ -67,11 +83,5 @@ public class FilmController {
     @GetMapping("/popular")
     public List<Film> getPopular(@RequestParam(defaultValue = "10") int count) {
         return filmService.getPopular(count);
-    }
-
-    @GetMapping("/director/{directorId}")
-    public List<Film> getFilmsByDirector(@PathVariable int directorId,
-                                         @RequestParam(defaultValue = "likes") String sortBy) {
-        return filmService.getFilmsByDirector(directorId, sortBy);
     }
 }

@@ -48,6 +48,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return new ArrayList<>(films.values());
     }
 
+    // Getting a list of common films
     @Override
     public List<Film> getCommonFilms(int userId, int friendId) {
         List<Film> commonFilms = new ArrayList<>();
@@ -57,6 +58,55 @@ public class InMemoryFilmStorage implements FilmStorage {
                 commonFilms.add(film);
         }
         return commonFilms;
+    }
+
+    // Getting films by director
+    @Override
+    public List<Film> getFilmsByDirector(int directorId) {
+        List<Film> filmsByDirector = new ArrayList<>();
+
+        for (Film film : films.values()) {
+            if (film.getDirectors() != null) {
+                for (Director director : film.getDirectors()) {
+                    if (director.getId() == directorId) {
+                        filmsByDirector.add(film);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return filmsByDirector;
+    }
+
+    // Searching films by title, description or director
+    @Override
+    public List<Film> searchFilms(String query, List<String> by) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        String lowerQuery = query.toLowerCase();
+
+        return films.values().stream()
+                .filter(film -> {
+                    boolean matches = false;
+                    if (by.contains("title") && film.getName() != null &&
+                            film.getName().toLowerCase().contains(lowerQuery)) {
+                        matches = true;
+                    }
+                    if (by.contains("description") && film.getDescription() != null &&
+                            film.getDescription().toLowerCase().contains(lowerQuery)) {
+                        matches = true;
+                    }
+                    if (by.contains("director") && film.getDirectors() != null &&
+                            film.getDirectors().stream()
+                                    .anyMatch(d -> d.getName().toLowerCase().contains(lowerQuery))) {
+                        matches = true;
+                    }
+                    return matches;
+                })
+                .toList();
     }
 
     // __________Likes_____________
@@ -86,23 +136,5 @@ public class InMemoryFilmStorage implements FilmStorage {
                     throw new NotFoundException("Film with id=" + filmId + " not found.");
                 }
         );
-    }
-
-    @Override
-    public List<Film> getFilmsByDirector(int directorId) {
-        List<Film> filmsByDirector = new ArrayList<>();
-
-        for (Film film : films.values()) {
-            if (film.getDirectors() != null) {
-                for (Director director : film.getDirectors()) {
-                    if (director.getId() == directorId) {
-                        filmsByDirector.add(film);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return filmsByDirector;
     }
 }

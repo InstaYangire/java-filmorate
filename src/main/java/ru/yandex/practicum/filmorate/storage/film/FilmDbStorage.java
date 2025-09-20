@@ -212,5 +212,39 @@ public class FilmDbStorage implements FilmStorage {
                 new Director(rs.getInt("id"), rs.getString("name")), filmId);
     }
 
+    // Searching films by title, description, or director
+    public List<Film> searchFilms(String query, List<String> by) {
+        if (query == null || query.isBlank()) {
+            return Collections.emptyList();
+        }
 
+        String searchPattern = "%" + query.toLowerCase() + "%";
+
+        boolean searchByTitle = by.contains("title");
+        boolean searchByDescription = by.contains("description");
+        boolean searchByDirector = by.contains("director");
+
+        if (!searchByTitle && !searchByDescription && !searchByDirector) {
+            throw new ValidationException("Invalid search parameters: " + by);
+        }
+
+        String sql = """
+            SELECT f.*
+            FROM films f
+            LEFT JOIN film_directors fd ON f.id = fd.film_id
+            LEFT JOIN directors d ON fd.director_id = d.id
+            WHERE ( ? AND LOWER(f.name) LIKE ? )
+               OR ( ? AND LOWER(f.description) LIKE ? )
+               OR ( ? AND LOWER(d.name) LIKE ? )
+            GROUP BY f.id
+            """;
+
+        return jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> mapRowToFilm(rs),
+                searchByTitle, searchPattern,
+                searchByDescription, searchPattern,
+                searchByDirector, searchPattern
+        );
+    }
 }

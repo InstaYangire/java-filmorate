@@ -369,4 +369,94 @@ class FilmDbStorageTest {
         assertFalse(updatedFilm.getDirectors().stream()
                 .anyMatch(d -> d.getName().equals("Director 1")));
     }
+
+    // ----------- Search Tests -----------
+
+    // Test: Film should be found by title
+    @Test
+    void shouldFindFilmByTitle() {
+        Film film = createSampleFilm();
+        film.setName("Love Actually");
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("love", List.of("title"));
+        assertEquals(1, results.size());
+        assertEquals("Love Actually", results.get(0).getName());
+    }
+
+    // Test: Film should be found by description
+    @Test
+    void shouldFindFilmByDescription() {
+        Film film = createSampleFilm();
+        film.setDescription("A romantic love story");
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("romantic", List.of("description"));
+        assertEquals(1, results.size());
+        assertTrue(results.get(0).getDescription().contains("romantic"));
+    }
+
+    // Test: Film should be found by director
+    @Test
+    void shouldFindFilmByDirector() {
+        Director director = createSampleDirector("Christopher Nolan");
+        Film film = createSampleFilm();
+        film.setDirectors(new ArrayList<>(List.of(director)));
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("nolan", List.of("director"));
+        assertEquals(1, results.size());
+        assertTrue(results.get(0).getDirectors().stream()
+                .anyMatch(d -> d.getName().equals("Christopher Nolan")));
+    }
+
+    // Test: Film should be found by title and director
+    @Test
+    void shouldFindFilmByTitleAndDirector() {
+        Director director = createSampleDirector("Steven Spielberg");
+        Film film = createSampleFilm();
+        film.setName("Jurassic Park");
+        film.setDirectors(new ArrayList<>(List.of(director)));
+        filmDbStorage.addFilm(film);
+
+        // Search by both title and director
+        List<Film> resultsByTitle = filmDbStorage.searchFilms("Jurassic", List.of("title", "director"));
+        List<Film> resultsByDirector = filmDbStorage.searchFilms("Spielberg", List.of("title", "director"));
+
+        assertEquals(1, resultsByTitle.size());
+        assertEquals(1, resultsByDirector.size());
+    }
+
+    // Test: No films should be found if no matches
+    @Test
+    void shouldReturnEmptyWhenNoMatch() {
+        Film film = createSampleFilm();
+        film.setName("Inception");
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("Matrix", List.of("title"));
+        assertTrue(results.isEmpty());
+    }
+
+    // Test: Search should be case-insensitive
+    @Test
+    void shouldHandleCaseInsensitiveSearch() {
+        Film film = createSampleFilm();
+        film.setName("Avatar");
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("AVATAR", List.of("title"));
+        assertEquals(1, results.size());
+    }
+
+    // Test: Search with blank query should return empty list
+    @Test
+    void shouldReturnEmptyWhenQueryIsBlank() {
+        Film film = createSampleFilm();
+        film.setName("Titanic");
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("   ", List.of("title"));
+        assertTrue(results.isEmpty());
+    }
 }
