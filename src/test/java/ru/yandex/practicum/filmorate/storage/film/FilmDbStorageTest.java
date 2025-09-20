@@ -106,6 +106,23 @@ class FilmDbStorageTest {
         assertFalse(films.isEmpty());
     }
 
+    // Test: Common films should be returned
+    @Test
+    void shouldReturnCommonFilms() {
+        User user = createSampleUser();
+        User friend = createSampleUser();
+        Film film = createSampleFilm();
+        Film savedFilm = filmDbStorage.addFilm(film);
+        filmDbStorage.addLike(savedFilm.getId(), user.getId());
+        filmDbStorage.addLike(savedFilm.getId(), friend.getId());
+
+        List<Film> films = filmDbStorage.getCommonFilms(user.getId(), friend.getId());
+        Set<Integer> likes = filmDbStorage.getFilmById(savedFilm.getId()).get().getLikes();
+        assertFalse(films.isEmpty());
+        assertTrue(likes.contains(user.getId()));
+        assertTrue(likes.contains(friend.getId()));
+    }
+
     // Test: Film should be updated successfully
     @Test
     void shouldUpdateFilmSuccessfully() {

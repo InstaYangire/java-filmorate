@@ -44,6 +44,16 @@ public class FilmController {
         return filmService.getAllFilms();
     }
 
+    // Getting common films
+    /*@GetMapping("/common/{userId}/{friendId}")
+    public List<Film> getCommonFilms(@PathVariable int userId, @PathVariable int friendId) {
+        return filmService.getCommonFilms(userId, friendId);
+    }*/
+    @GetMapping("/common")
+    public List<Film> getCommonFilms(@RequestParam("userId") int userId, @RequestParam("friendId") int friendId) {
+        return filmService.getCommonFilms(userId, friendId);
+    }
+
     //___________Likes__________
     // Adding a like to a movie
     @PutMapping("/{id}/like/{userId}")

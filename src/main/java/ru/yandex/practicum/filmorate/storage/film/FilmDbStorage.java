@@ -106,20 +106,19 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getCommonFilms(int userId, int friendId) {
         String sql = """
-                
-                SELECT f.id AS film_id, f.name AS film_name, f.description, f.release_date, f.duration,
-                       m.id AS mpa_id, m.name AS mpa_name
-                  FROM films f
-                  JOIN mpa_ratings m ON f.mpa_id = m.id
-                  JOIN film_likes l ON f.id = l.film_id\s
-                 WHERE f.id IN (SELECT l1.film_id
-                 				  FROM film_likes l1
-                 				  JOIN film_likes l2 ON l1.film_id = l2.film_id
-                 				 WHERE l1.user_id = :userId AND l2.user_id = :friendId)
-                 GROUP BY f.id
-                 ORDER BY count(l.film_id) DESC
-            """;
-        return jdbcTemplate.query(sql, ((rs, rowNum) -> mapRowToFilm(rs)));
+                SELECT f.id AS film_id, f.name AS film_name, f.description, f.release_date, f.duration, 
+                m.id AS mpa_id, m.name AS mpa_name
+                FROM films f
+                JOIN mpa_ratings m ON f.mpa_id = m.id
+                JOIN film_likes l ON f.id = l.film_id
+                WHERE f.id IN (SELECT l1.film_id
+                               FROM film_likes l1
+                               JOIN film_likes l2 ON l1.film_id = l2.film_id
+                               WHERE l1.user_id = ? AND l2.user_id = ?)
+                GROUP BY f.id
+                ORDER BY count(l.film_id) DESC
+                """;
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), userId, friendId);
     }
 
     // Adding a like to a film
