@@ -115,6 +115,17 @@ public class FilmService {
         return sorted;
     }
 
+    // Getting common films
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        userStorage.getUserById(friendId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + friendId + " not found."));
+        List<Film> listFilms = filmStorage.getCommonFilms(userId, friendId);
+        log.info("User {} and user {} have {} common films.", userId, friendId, listFilms.size());
+        return listFilms;
+    }
+
     // Validate and replace MPA and genres from services
     private void validateAndSetMpaAndGenres(Film film) {
         if (film.getMpa() != null) {

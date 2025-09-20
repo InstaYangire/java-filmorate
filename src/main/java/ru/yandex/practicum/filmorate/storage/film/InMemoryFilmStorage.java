@@ -48,6 +48,17 @@ public class InMemoryFilmStorage implements FilmStorage {
         return new ArrayList<>(films.values());
     }
 
+    @Override
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        List<Film> commonFilms = new ArrayList<>();
+
+        for (Film film : films.values()) {
+            if (film.getLikes().contains(userId) && film.getLikes().contains(friendId))
+                commonFilms.add(film);
+        }
+        return commonFilms;
+    }
+
     // __________Likes_____________
     // Adding like
     @Override
