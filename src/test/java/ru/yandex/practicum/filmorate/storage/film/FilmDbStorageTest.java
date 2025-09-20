@@ -459,4 +459,44 @@ class FilmDbStorageTest {
         List<Film> results = filmDbStorage.searchFilms("   ", List.of("title"));
         assertTrue(results.isEmpty());
     }
+
+    // Test: Invalid 'by' parameter should throw ValidationException
+    @Test
+    void shouldThrowWhenByParameterIsInvalid() {
+        Film film = createSampleFilm();
+        filmDbStorage.addFilm(film);
+
+        assertThrows(ValidationException.class, () ->
+                filmDbStorage.searchFilms("test", List.of("wrong"))
+        );
+    }
+
+    // Test: Film should not be duplicated when matches multiple fields
+    @Test
+    void shouldNotDuplicateFilmWhenMatchesMultipleFields() {
+        Film film = createSampleFilm();
+        film.setName("Unique Movie");
+        film.setDescription("This Unique Movie is great");
+        filmDbStorage.addFilm(film);
+
+        List<Film> results = filmDbStorage.searchFilms("unique", List.of("title", "description"));
+        assertEquals(1, results.size());
+        assertEquals("Unique Movie", results.get(0).getName());
+    }
+
+    // Test: Film should be found by description and director
+    @Test
+    void shouldFindFilmByDescriptionAndDirector() {
+        Director director = createSampleDirector("James Cameron");
+        Film film = createSampleFilm();
+        film.setDescription("Epic sci-fi adventure");
+        film.setDirectors(new ArrayList<>(List.of(director)));
+        filmDbStorage.addFilm(film);
+
+        List<Film> resultsByDescription = filmDbStorage.searchFilms("sci-fi", List.of("description", "director"));
+        List<Film> resultsByDirector = filmDbStorage.searchFilms("Cameron", List.of("description", "director"));
+
+        assertEquals(1, resultsByDescription.size());
+        assertEquals(1, resultsByDirector.size());
+    }
 }

@@ -220,31 +220,39 @@ public class FilmDbStorage implements FilmStorage {
 
         String searchPattern = "%" + query.toLowerCase() + "%";
 
-        boolean searchByTitle = by.contains("title");
-        boolean searchByDescription = by.contains("description");
-        boolean searchByDirector = by.contains("director");
-
-        if (!searchByTitle && !searchByDescription && !searchByDirector) {
-            throw new ValidationException("Invalid search parameters: " + by);
+        for (String param : by) {
+            if (!List.of("title", "description", "director").contains(param)) {
+                throw new ValidationException("Invalid search parameter: " + param);
+            }
         }
 
-        String sql = """
-            SELECT f.*
-            FROM films f
-            LEFT JOIN film_directors fd ON f.id = fd.film_id
-            LEFT JOIN directors d ON fd.director_id = d.id
-            WHERE ( ? AND LOWER(f.name) LIKE ? )
-               OR ( ? AND LOWER(f.description) LIKE ? )
-               OR ( ? AND LOWER(d.name) LIKE ? )
-            GROUP BY f.id
-            """;
+        List<String> conditions = new ArrayList<>();
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.name) LIKE ?");
+        }
+        if (by.contains("description")) {
+            conditions.add("LOWER(f.description) LIKE ?");
+        }
+        if (by.contains("director")) {
+            conditions.add("LOWER(d.name) LIKE ?");
+        }
 
-        return jdbcTemplate.query(
-                sql,
-                (rs, rowNum) -> mapRowToFilm(rs),
-                searchByTitle, searchPattern,
-                searchByDescription, searchPattern,
-                searchByDirector, searchPattern
-        );
+        String whereClause = String.join(" OR ", conditions);
+
+        String sql = """
+        SELECT DISTINCT f.*
+        FROM films f
+        LEFT JOIN film_directors fd ON f.id = fd.film_id
+        LEFT JOIN directors d ON fd.director_id = d.id
+        WHERE %s
+        GROUP BY f.id
+        """.formatted(whereClause);
+
+        List<Object> params = new ArrayList<>();
+        for (int i = 0; i < conditions.size(); i++) {
+            params.add(searchPattern);
+        }
+
+        return jdbcTemplate.query(sql, params.toArray(), (rs, rowNum) -> mapRowToFilm(rs));
     }
 }
