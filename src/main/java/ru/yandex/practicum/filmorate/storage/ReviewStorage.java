@@ -10,23 +10,11 @@ public interface ReviewStorage {
 
     Review updateReview(Review review);
 
-    void deleteReview(Long id);
-
-    Optional<Review> getReviewById(Long id);
-
     void deleteReview(int id);
 
     Optional<Review> getReviewById(int id);
 
     List<Review> getAllReviews();
-
-    List<Review> getReviewsByFilmId(Long filmId);
-
-    void addLike(Long reviewId, Long userId);
-
-    void addDislike(Long reviewId, Long userId);
-
-    void deleteLike(Long reviewId, Long userId);
 
     List<Review> getReviewsByFilmId(int filmId);
 
@@ -35,4 +23,5 @@ public interface ReviewStorage {
     void addDislike(int reviewId, int userId);
 
     void deleteLike(int reviewId, int userId);
+
 }
