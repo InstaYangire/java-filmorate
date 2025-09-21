@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.film.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.List;
@@ -15,7 +18,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @JdbcTest
-@Import({ReviewDbStorage.class, UserDbStorage.class})
+@Import({
+        ReviewDbStorage.class,   // Тестируемый компонент
+        UserDbStorage.class,     // Зависимость ReviewDbStorage
+        FilmDbStorage.class,     // Зависимость ReviewDbStorage
+        GenreDbStorage.class,    // Зависимость FilmDbStorage
+        MpaDbStorage.class       // Зависимость FilmDbStorage
+})
 class ReviewDbStorageTest {
 
     @Autowired
@@ -26,17 +35,17 @@ class ReviewDbStorageTest {
 
     private Review sampleReview;
     private Long testUserId;
-    private final Long testFilmId = 1L; // <-- Исправлено: добавлен модификатор final
+    private final Long testFilmId = 1L; // Предполагаем, что фильм с ID=1 существует
 
     @BeforeEach
     void setUp() {
         // Создаем тестового пользователя
         ru.yandex.practicum.filmorate.model.User user = new ru.yandex.practicum.filmorate.model.User();
         user.setEmail("testuser@example.com");
-        user.setLogin("testUser"); // <-- Исправлено: логин изменен на camelCase "testUser"
+        user.setLogin("testUser");
         user.setName("Test User");
         user.setBirthday(java.time.LocalDate.of(1990, 1, 1));
-        testUserId = (long) userDbStorage.addUser(user).getId();
+        testUserId = userDbStorage.addUser(user).getId();
 
         sampleReview = new Review();
         sampleReview.setContent("Great film!");
@@ -101,7 +110,7 @@ class ReviewDbStorageTest {
     @Test
     void shouldGetReviewsByFilmId() {
         reviewStorage.createReview(sampleReview);
-        List<Review> reviews = reviewStorage.getReviewsByFilmId(testFilmId); // <-- Здесь Long -> Long, ошибки нет.
+        List<Review> reviews = reviewStorage.getReviewsByFilmId(testFilmId);
         assertFalse(reviews.isEmpty());
     }
 }
