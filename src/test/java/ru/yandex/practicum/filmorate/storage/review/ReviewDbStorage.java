@@ -34,13 +34,13 @@ public class ReviewDbStorage implements ReviewStorage {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, review.getContent());
             ps.setBoolean(2, review.getIsPositive());
-            ps.setInt(3, review.getUserId()); // <-- Исправлено с setLong на setInt
-            ps.setInt(4, review.getFilmId()); // <-- Исправлено с setLong на setInt
+            ps.setInt(3, Math.toIntExact(review.getUserId())); // <-- Исправлено с setLong на setInt
+            ps.setInt(4, Math.toIntExact(review.getFilmId())); // <-- Исправлено с setLong на setInt
             return ps;
         }, keyHolder);
 
         int id = Objects.requireNonNull(keyHolder.getKey()).intValue(); // <-- Исправлено с longValue() на intValue()
-        review.setReviewId(id);
+        review.setReviewId((long) id);
         review.setUseful(0);
         return review;
     }
@@ -64,6 +64,16 @@ public class ReviewDbStorage implements ReviewStorage {
     }
 
     @Override
+    public void deleteReview(Long id) {
+
+    }
+
+    @Override
+    public Optional<Review> getReviewById(Long id) {
+        return Optional.empty();
+    }
+
+    @Override
     public void deleteReview(int id) {
         String sql = "DELETE FROM reviews WHERE review_id = ?";
         int rowsDeleted = jdbcTemplate.update(sql, id);
@@ -84,6 +94,26 @@ public class ReviewDbStorage implements ReviewStorage {
     public List<Review> getAllReviews() {
         String sql = "SELECT * FROM reviews";
         return jdbcTemplate.query(sql, this::mapRowToReview);
+    }
+
+    @Override
+    public List<Review> getReviewsByFilmId(Long filmId) {
+        return List.of();
+    }
+
+    @Override
+    public void addLike(Long reviewId, Long userId) {
+
+    }
+
+    @Override
+    public void addDislike(Long reviewId, Long userId) {
+
+    }
+
+    @Override
+    public void deleteLike(Long reviewId, Long userId) {
+
     }
 
     @Override
@@ -128,11 +158,11 @@ public class ReviewDbStorage implements ReviewStorage {
 
     private Review mapRowToReview(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
         Review review = new Review();
-        review.setReviewId(rs.getInt("review_id"));
+        review.setReviewId((long) rs.getInt("review_id"));
         review.setContent(rs.getString("content"));
         review.setIsPositive(rs.getBoolean("is_positive"));
-        review.setUserId(rs.getInt("user_id"));
-        review.setFilmId(rs.getInt("film_id"));
+        review.setUserId((long) rs.getInt("user_id"));
+        review.setFilmId((long) rs.getInt("film_id"));
         review.setUseful(rs.getInt("useful"));
         return review;
     }
