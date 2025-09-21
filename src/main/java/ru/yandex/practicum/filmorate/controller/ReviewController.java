@@ -10,6 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/reviews")
 @RequiredArgsConstructor
+@SuppressWarnings("unused") // <-- Добавлена эта строка для подавления предупреждений IDE
 public class ReviewController {
 
     private final ReviewService reviewService;

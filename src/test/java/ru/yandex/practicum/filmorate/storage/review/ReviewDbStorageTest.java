@@ -34,8 +34,8 @@ class ReviewDbStorageTest {
     private UserDbStorage userDbStorage;
 
     private Review sampleReview;
-    private Long testUserId;
-    private final Long testFilmId = 1L; // Предполагаем, что фильм с ID=1 существует
+    private int testUserId;
+    private final int testFilmId = 1; // Предполагаем, что фильм с ID=1 существует
 
     @BeforeEach
     void setUp() {
@@ -50,8 +50,8 @@ class ReviewDbStorageTest {
         sampleReview = new Review();
         sampleReview.setContent("Great film!");
         sampleReview.setIsPositive(true);
-        sampleReview.setUserId(testUserId);
-        sampleReview.setFilmId(testFilmId);
+        sampleReview.setUserId((long) testUserId);
+        sampleReview.setFilmId((long) testFilmId);
     }
 
     @Test
@@ -78,22 +78,22 @@ class ReviewDbStorageTest {
     @Test
     void shouldDeleteReview() {
         Review created = reviewStorage.createReview(sampleReview);
-        Long id = created.getReviewId();
+        int id = Math.toIntExact(created.getReviewId());
 
-        reviewStorage.deleteReview(id);
+        reviewStorage.deleteReview((long) id);
 
-        assertThrows(NotFoundException.class, () -> reviewStorage.getReviewById(id).orElseThrow());
+        assertThrows(NotFoundException.class, () -> reviewStorage.getReviewById((long) id).orElseThrow());
     }
 
     @Test
     void shouldAddAndDeleteLike() {
         Review created = reviewStorage.createReview(sampleReview);
 
-        reviewStorage.addLike(created.getReviewId(), testUserId);
+        reviewStorage.addLike(created.getReviewId(), (long) testUserId);
         Review afterLike = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
         assertEquals(1, afterLike.getUseful());
 
-        reviewStorage.deleteLike(created.getReviewId(), testUserId);
+        reviewStorage.deleteLike(created.getReviewId(), (long) testUserId);
         Review afterDelete = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
         assertEquals(0, afterDelete.getUseful());
     }
@@ -102,7 +102,7 @@ class ReviewDbStorageTest {
     void shouldAddDislike() {
         Review created = reviewStorage.createReview(sampleReview);
 
-        reviewStorage.addDislike(created.getReviewId(), testUserId);
+        reviewStorage.addDislike(created.getReviewId(), (long) testUserId);
         Review afterDislike = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
         assertEquals(-1, afterDislike.getUseful());
     }
@@ -110,7 +110,7 @@ class ReviewDbStorageTest {
     @Test
     void shouldGetReviewsByFilmId() {
         reviewStorage.createReview(sampleReview);
-        List<Review> reviews = reviewStorage.getReviewsByFilmId(testFilmId);
+        List<Review> reviews = reviewStorage.getReviewsByFilmId((long) testFilmId);
         assertFalse(reviews.isEmpty());
     }
 }
