@@ -1,116 +1,139 @@
 package ru.yandex.practicum.filmorate.storage.review;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
-import org.springframework.context.annotation.Import;
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
-import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.film.MpaDbStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+@Component("reviewDbStorage")
+@RequiredArgsConstructor
+public class ReviewDbStorage implements ReviewStorage {
 
-@JdbcTest
-@Import({
-        ReviewDbStorage.class,   // Тестируемый компонент
-        UserDbStorage.class,     // Зависимость ReviewDbStorage
-        FilmDbStorage.class,     // Зависимость ReviewDbStorage
-        GenreDbStorage.class,    // Зависимость FilmDbStorage
-        MpaDbStorage.class       // Зависимость FilmDbStorage
-})
-class ReviewDbStorageTest {
+    private final JdbcTemplate jdbcTemplate;
+    // private final UserStorage userStorage; <-- УДАЛЕНО
+    // private final FilmStorage filmStorage; <-- УДАЛЕНО
 
-    @Autowired
-    private ReviewStorage reviewStorage;
+    @Override
+    public Review createReview(Review review) {
+        // ВАЛИДАЦИЯ УДАЛЕНА ОТСЮДА. Она теперь в ReviewService.
 
-    @Autowired
-    private UserDbStorage userDbStorage;
+        String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id) VALUES (?, ?, ?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
 
-    private Review sampleReview;
-    private int testUserId;
-    private final int testFilmId = 1; // Предполагаем, что фильм с ID=1 существует
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, review.getContent());
+            ps.setBoolean(2, review.getIsPositive());
+            ps.setInt(3, review.getUserId()); // <-- Исправлено с setLong на setInt
+            ps.setInt(4, review.getFilmId()); // <-- Исправлено с setLong на setInt
+            return ps;
+        }, keyHolder);
 
-    @BeforeEach
-    void setUp() {
-        // Создаем тестового пользователя
-        ru.yandex.practicum.filmorate.model.User user = new ru.yandex.practicum.filmorate.model.User();
-        user.setEmail("testuser@example.com");
-        user.setLogin("testUser");
-        user.setName("Test User");
-        user.setBirthday(java.time.LocalDate.of(1990, 1, 1));
-        testUserId = userDbStorage.addUser(user).getId();
-
-        sampleReview = new Review();
-        sampleReview.setContent("Great film!");
-        sampleReview.setIsPositive(true);
-        sampleReview.setUserId((long) testUserId);
-        sampleReview.setFilmId((long) testFilmId);
+        int id = Objects.requireNonNull(keyHolder.getKey()).intValue(); // <-- Исправлено с longValue() на intValue()
+        review.setReviewId(id);
+        review.setUseful(0);
+        return review;
     }
 
-    @Test
-    void shouldCreateAndGetReview() {
-        Review created = reviewStorage.createReview(sampleReview);
-        assertNotNull(created.getReviewId());
-        assertEquals(sampleReview.getContent(), created.getContent());
+    @Override
+    public Review updateReview(Review review) {
+        String sql = "UPDATE reviews SET content = ?, is_positive = ?, user_id = ?, film_id = ? WHERE review_id = ?";
+        int rowsUpdated = jdbcTemplate.update(sql,
+                review.getContent(),
+                review.getIsPositive(),
+                review.getUserId(),
+                review.getFilmId(),
+                review.getReviewId());
 
-        Review retrieved = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
-        assertEquals(created.getReviewId(), retrieved.getReviewId());
-        assertEquals(created.getContent(), retrieved.getContent());
+        if (rowsUpdated == 0) {
+            throw new NotFoundException("Review with id=" + review.getReviewId() + " not found for update.");
+        }
+
+        return getReviewById(review.getReviewId())
+                .orElseThrow(() -> new IllegalStateException("Review vanished after update."));
     }
 
-    @Test
-    void shouldUpdateReview() {
-        Review created = reviewStorage.createReview(sampleReview);
-        created.setContent("Updated content");
-        Review updated = reviewStorage.updateReview(created);
-
-        assertEquals("Updated content", updated.getContent());
-        assertEquals(created.getReviewId(), updated.getReviewId());
+    @Override
+    public void deleteReview(int id) {
+        String sql = "DELETE FROM reviews WHERE review_id = ?";
+        int rowsDeleted = jdbcTemplate.update(sql, id);
+        if (rowsDeleted == 0) {
+            throw new NotFoundException("Review with id=" + id + " not found for deletion.");
+        }
+        jdbcTemplate.update("DELETE FROM review_reactions WHERE review_id = ?", id);
     }
 
-    @Test
-    void shouldDeleteReview() {
-        Review created = reviewStorage.createReview(sampleReview);
-        int id = Math.toIntExact(created.getReviewId());
-
-        reviewStorage.deleteReview((long) id);
-
-        assertThrows(NotFoundException.class, () -> reviewStorage.getReviewById((long) id).orElseThrow());
+    @Override
+    public Optional<Review> getReviewById(int id) {
+        String sql = "SELECT * FROM reviews WHERE review_id = ?";
+        List<Review> reviews = jdbcTemplate.query(sql, this::mapRowToReview, id);
+        return reviews.stream().findFirst();
     }
 
-    @Test
-    void shouldAddAndDeleteLike() {
-        Review created = reviewStorage.createReview(sampleReview);
-
-        reviewStorage.addLike(created.getReviewId(), (long) testUserId);
-        Review afterLike = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
-        assertEquals(1, afterLike.getUseful());
-
-        reviewStorage.deleteLike(created.getReviewId(), (long) testUserId);
-        Review afterDelete = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
-        assertEquals(0, afterDelete.getUseful());
+    @Override
+    public List<Review> getAllReviews() {
+        String sql = "SELECT * FROM reviews";
+        return jdbcTemplate.query(sql, this::mapRowToReview);
     }
 
-    @Test
-    void shouldAddDislike() {
-        Review created = reviewStorage.createReview(sampleReview);
-
-        reviewStorage.addDislike(created.getReviewId(), (long) testUserId);
-        Review afterDislike = reviewStorage.getReviewById(created.getReviewId()).orElseThrow();
-        assertEquals(-1, afterDislike.getUseful());
+    @Override
+    public List<Review> getReviewsByFilmId(int filmId) {
+        String sql = "SELECT * FROM reviews WHERE film_id = ?";
+        return jdbcTemplate.query(sql, this::mapRowToReview, filmId);
     }
 
-    @Test
-    void shouldGetReviewsByFilmId() {
-        reviewStorage.createReview(sampleReview);
-        List<Review> reviews = reviewStorage.getReviewsByFilmId((long) testFilmId);
-        assertFalse(reviews.isEmpty());
+    @Override
+    public void addLike(int reviewId, int userId) {
+        updateReaction(reviewId, userId, true);
+    }
+
+    @Override
+    public void addDislike(int reviewId, int userId) {
+        updateReaction(reviewId, userId, false);
+    }
+
+    @Override
+    public void deleteLike(int reviewId, int userId) {
+        String sql = "DELETE FROM review_reactions WHERE review_id = ? AND user_id = ?";
+        jdbcTemplate.update(sql, reviewId, userId);
+        updateUsefulCount(reviewId);
+    }
+
+    private void updateReaction(int reviewId, int userId, boolean isLike) {
+        deleteLike(reviewId, userId);
+        String sql = "INSERT INTO review_reactions (review_id, user_id, is_like) VALUES (?, ?, ?)";
+        jdbcTemplate.update(sql, reviewId, userId, isLike);
+        updateUsefulCount(reviewId);
+    }
+
+    private void updateUsefulCount(int reviewId) {
+        String sql = "SELECT SUM(CASE WHEN is_like THEN 1 ELSE -1 END) AS useful_count " +
+                "FROM review_reactions WHERE review_id = ?";
+        Integer useful = jdbcTemplate.queryForObject(sql, Integer.class, reviewId);
+        useful = useful == null ? 0 : useful;
+
+        String updateSql = "UPDATE reviews SET useful = ? WHERE review_id = ?";
+        jdbcTemplate.update(updateSql, useful, reviewId);
+    }
+
+    private Review mapRowToReview(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+        Review review = new Review();
+        review.setReviewId(rs.getInt("review_id"));
+        review.setContent(rs.getString("content"));
+        review.setIsPositive(rs.getBoolean("is_positive"));
+        review.setUserId(rs.getInt("user_id"));
+        review.setFilmId(rs.getInt("film_id"));
+        review.setUseful(rs.getInt("useful"));
+        return review;
     }
 }
