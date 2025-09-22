@@ -3,84 +3,107 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
+// Service layer for reviews
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
 
     private final ReviewStorage reviewStorage;
-    private final UserStorage userStorage; // <-- Добавлена зависимость для валидации
-    private final FilmStorage filmStorage; // <-- Добавлена зависимость для валидации
+    private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
 
-    public Review createReview(Review review) {
-        validateReview(review);
-        // Валидация существования пользователя и фильма ПЕРЕНЕСЕНА СЮДА
-        if (!userStorage.getUserById(review.getUserId()).isPresent()) {
-            throw new NotFoundException("User with id=" + review.getUserId() + " not found.");
-        }
-        if (!filmStorage.getFilmById(review.getFilmId()).isPresent()) {
-            throw new NotFoundException("Film with id=" + review.getFilmId() + " not found.");
-        }
-        return reviewStorage.createReview(review);
+    // Create a new review
+    public Review create(Review review) {
+        validateUserAndFilm(review.getUserId(), review.getFilmId());
+        return reviewStorage.create(review);
     }
 
-    public Review updateReview(Review review) {
-        if (review.getReviewId() == 0) {
-            throw new IllegalArgumentException("Review ID cannot be null or zero for update.");
-        }
-        validateReview(review);
-        return reviewStorage.updateReview(review);
+    // Update review
+    public Review update(Review review) {
+        validateUserAndFilm(review.getUserId(), review.getFilmId());
+        return reviewStorage.update(review);
     }
 
-    public void deleteReview(int id) {
-        reviewStorage.deleteReview(id);
+    // Delete review by ID
+    public void delete(int reviewId) {
+        checkReview(reviewId);
+        reviewStorage.delete(reviewId);
     }
 
-    public Review getReviewById(int id) {
-        return reviewStorage.getReviewById(id)
-                .orElseThrow(() -> new NotFoundException("Review with id=" + id + " not found."));
+    // Get review by ID
+    public Review getById(int reviewId) {
+        return reviewStorage.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("Review with id=" + reviewId + " not found"));
     }
 
-    public List<Review> getReviewsByFilmId(Integer filmId, int count) {
-        List<Review> reviews = filmId == null ?
-                reviewStorage.getAllReviews() :
-                reviewStorage.getReviewsByFilmId(filmId);
-
-        return reviews.stream()
-                .sorted(Comparator.comparingInt(Review::getUseful).reversed())
-                .limit(count)
-                .collect(Collectors.toList());
+    // Get reviews for a film (or all if filmId == null)
+    public List<Review> getByFilm(Integer filmId, int count) {
+        return reviewStorage.findByFilmId(filmId, count);
     }
 
+    // Add like
     public void addLike(int reviewId, int userId) {
+        checkUser(userId);
+        checkReview(reviewId);
         reviewStorage.addLike(reviewId, userId);
     }
 
+    // Add dislike
     public void addDislike(int reviewId, int userId) {
+        checkUser(userId);
+        checkReview(reviewId);
         reviewStorage.addDislike(reviewId, userId);
     }
 
-    public void deleteLike(int reviewId, int userId) {
-        reviewStorage.deleteLike(reviewId, userId);
+    // Remove like
+    public void removeLike(int reviewId, int userId) {
+        checkUser(userId);
+        checkReview(reviewId);
+        reviewStorage.removeLike(reviewId, userId);
     }
 
-    private void validateReview(Review review) {
-        if (review.getContent() == null || review.getContent().isBlank()) {
-            throw new IllegalArgumentException("Review content cannot be empty.");
+    // Remove dislike
+    public void removeDislike(int reviewId, int userId) {
+        checkUser(userId);
+        checkReview(reviewId);
+        reviewStorage.removeDislike(reviewId, userId);
+    }
+
+    // Helpers
+    private void validateUserAndFilm(Integer userId, Integer filmId) {
+        checkUser(userId);
+        checkFilm(filmId);
+    }
+
+    private void checkUser(Integer userId) {
+        if (userId == null) {
+            throw new ValidationException("User id cannot be null");
         }
-        if (review.getUserId() == 0) {
-            throw new IllegalArgumentException("User ID cannot be null or zero.");
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found"));
+    }
+
+    private void checkFilm(Integer filmId) {
+        if (filmId == null) {
+            throw new ValidationException("Film id cannot be null");
         }
-        if (review.getFilmId() == 0) {
-            throw new IllegalArgumentException("Film ID cannot be null or zero.");
+        filmStorage.getFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Film with id=" + filmId + " not found"));
+    }
+
+    private void checkReview(Integer reviewId) {
+        if (reviewId == null) {
+            throw new ValidationException("Review id cannot be null");
         }
+        reviewStorage.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("Review with id=" + reviewId + " not found"));
     }
 }

@@ -5,23 +5,33 @@ import ru.yandex.practicum.filmorate.model.Review;
 import java.util.List;
 import java.util.Optional;
 
+// Storage interface for reviews
 public interface ReviewStorage {
-    Review createReview(Review review);
 
-    Review updateReview(Review review);
+    // Create a new review
+    Review create(Review review);
 
-    void deleteReview(int id);
+    // Update an existing review
+    Review update(Review review);
 
-    Optional<Review> getReviewById(int id);
+    // Delete a review by ID
+    void delete(int reviewId);
 
-    List<Review> getAllReviews();
+    // Find review by ID
+    Optional<Review> findById(int reviewId);
 
-    List<Review> getReviewsByFilmId(int filmId);
+    // Find all reviews for a film (or all reviews if filmId = null)
+    List<Review> findByFilmId(Integer filmId, int count);
 
+    // Add like to review
     void addLike(int reviewId, int userId);
 
+    // Add dislike to review
     void addDislike(int reviewId, int userId);
 
-    void deleteLike(int reviewId, int userId);
+    // Remove like from review
+    void removeLike(int reviewId, int userId);
 
+    // Remove dislike from review
+    void removeDislike(int reviewId, int userId);
 }

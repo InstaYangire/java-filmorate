@@ -8,10 +8,10 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Review {
-    private int reviewId;
+    private Integer reviewId;
     private String content;
     private Boolean isPositive;
-    private int userId;
-    private int filmId;
-    private int useful; // счетчик полезности (лайки - дизлайки)
+    private Integer userId;
+    private Integer filmId;
+    private int useful;
 }
