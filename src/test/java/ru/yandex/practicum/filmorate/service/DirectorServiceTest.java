@@ -59,10 +59,8 @@ public class DirectorServiceTest {
 
         jdbcTemplate = new JdbcTemplate(dataSource);
 
-        jdbcTemplate.execute("DROP TABLE IF EXISTS film_directors");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS directors");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS films");
-        // Initialize database schema for tests
+        jdbcTemplate.execute("DROP ALL OBJECTS");
+
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS directors (" +
                 "id INT PRIMARY KEY AUTO_INCREMENT, " +
                 "name VARCHAR NOT NULL)");
@@ -75,6 +73,13 @@ public class DirectorServiceTest {
                 "duration INT, " +
                 "mpa_id INT, " +
                 "director_id INT)");
+
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS film_directors (" +
+                "film_id INT NOT NULL, " +
+                "director_id INT NOT NULL, " +
+                "PRIMARY KEY (film_id, director_id), " +
+                "FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE, " +
+                "FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE CASCADE)");
 
         DirectorStorage directorStorage = new DirectorDbStorage(jdbcTemplate);
         directorService = new DirectorService(directorStorage);
