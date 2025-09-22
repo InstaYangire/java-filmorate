@@ -150,4 +150,62 @@ class FilmServiceTest {
                 filmService.addLike(film.getId(), user.getId()));
         assertEquals("User with id=" + user.getId() + " has already liked film with id=" + film.getId(), ex.getMessage());
     }
+
+    // ----------- Search Tests -----------
+    // Test: Should find film by title
+    @Test
+    void shouldFindFilmByTitle() {
+        Film film = registerFilm("Love Actually");
+        List<Film> results = filmService.searchFilms("love", List.of("title"));
+
+        assertEquals(1, results.size());
+        assertEquals(film.getId(), results.get(0).getId());
+    }
+
+    // Test: Should find film by description
+    @Test
+    void shouldFindFilmByDescription() {
+        Film film = makeValidFilm("Random");
+        film.setDescription("Epic adventure story");
+        filmService.addFilm(film);
+
+        List<Film> results = filmService.searchFilms("adventure", List.of("description"));
+        assertEquals(1, results.size());
+    }
+
+    // Test: Should find film by director
+    @Test
+    void shouldFindFilmByDirector() {
+        assertDoesNotThrow(() -> filmService.searchFilms("Nolan", List.of("director")));
+    }
+
+    // Test: Should find film by title and description
+    @Test
+    void shouldFindFilmByTitleAndDescription() {
+        Film film = makeValidFilm("Matrix");
+        film.setDescription("Sci-fi revolution");
+        filmService.addFilm(film);
+
+        List<Film> results = filmService.searchFilms("sci-fi", List.of("title", "description"));
+        assertEquals(1, results.size());
+    }
+
+    // Test: Should return empty list when no matches found
+    @Test
+    void shouldReturnEmptyWhenNoMatches() {
+        registerFilm("Interstellar");
+        List<Film> results = filmService.searchFilms("Comedy", List.of("title"));
+        assertTrue(results.isEmpty());
+    }
+
+    // Test: Should throw when invalid search parameter provided
+    @Test
+    void shouldThrowWhenInvalidByParameter() {
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> filmService.searchFilms("something", List.of("invalidField"))
+        );
+
+        assertEquals("Invalid search parameter: invalidField", ex.getMessage());
+    }
 }
