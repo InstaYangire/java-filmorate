@@ -3,6 +3,9 @@ package ru.yandex.practicum.filmorate.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Feed;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryFriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
@@ -38,7 +41,19 @@ class UserServiceTest {
         InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
         FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
 
-        service = new UserService(userStorage, friendshipService);
+        FeedService feedService = new FeedService(null, null) {
+            public void addFeed(int userId, EventType eventType, Operation operation, int entityId) {
+
+            }
+
+            public List<Feed> getFeedByUserId(int userId) {
+                return List.of();
+            }
+
+            public void removeUserFeed(int userId) {
+            }
+        };
+        service = new UserService(userStorage, friendshipService, feedService);
     }
 
     // ____________Tests___________

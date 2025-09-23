@@ -5,10 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
@@ -151,7 +148,18 @@ public class ReviewServiceTest {
         filmStorage = new FilmDbStorage(jdbcTemplate);
         reviewStorage = new ReviewDbStorage(jdbcTemplate);
 
-        reviewService = new ReviewService(reviewStorage, userStorage, filmStorage);
+        FeedService feedService = new FeedService(null, null) {
+            public void addFeed(int userId, EventType eventType, Operation operation, int entityId) {
+            }
+
+            public List<Feed> getFeedByUserId(int userId) {
+                return List.of();
+            }
+
+            public void removeUserFeed(int userId) {
+            }
+        };
+        reviewService = new ReviewService(reviewStorage, userStorage, filmStorage, feedService);
     }
 
 

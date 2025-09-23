@@ -64,7 +64,6 @@ CREATE TABLE IF NOT EXISTS film_directors (
     PRIMARY KEY (film_id, director_id)
 );
 
--- Таблица для отзывов
 CREATE TABLE IF NOT EXISTS reviews (
     review_id INT PRIMARY KEY AUTO_INCREMENT,
     content VARCHAR NOT NULL,
@@ -76,7 +75,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE
 );
 
--- Таблица для реакций (лайков/диз) на отзывы
 CREATE TABLE IF NOT EXISTS review_likes (
     review_id INT NOT NULL,
     user_id INT NOT NULL,
@@ -84,4 +82,13 @@ CREATE TABLE IF NOT EXISTS review_likes (
     PRIMARY KEY (review_id, user_id),
     FOREIGN KEY (review_id) REFERENCES reviews(review_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS feed (
+    event_id INT PRIMARY KEY AUTO_INCREMENT,
+    timestamp BIGINT NOT NULL,
+    user_id INT NOT NULL,
+    event_type VARCHAR NOT NULL,
+    operation VARCHAR NOT NULL,
+    entity_id INT NOT NULL
 );
