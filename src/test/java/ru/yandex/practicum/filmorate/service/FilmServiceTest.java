@@ -138,6 +138,25 @@ class FilmServiceTest {
         assertEquals(f3.getId(), popular.get(2).getId());
     }
 
+    // Test: Should return popular films with filters
+    @Test
+    void shouldReturnPopularFilmsWithFilters() {
+        Film f1 = registerFilm("Film 1");
+        Film f2 = registerFilm("Film 2");
+        Film f3 = registerFilm("Film 3");
+
+        User u1 = registerUser("u1", "u1@mail.com");
+        User u2 = registerUser("u2", "u2@mail.com");
+
+        filmService.addLike(f1.getId(), u1.getId());
+        filmService.addLike(f1.getId(), u2.getId());
+
+        List<Film> popular = filmService.getPopular(5, null, null);
+
+        assertFalse(popular.isEmpty());
+        assertEquals(f1.getId(), popular.get(0).getId());
+    }
+
     // Test: Should throw when adding duplicate like
     @Test
     void shouldThrowWhenAddingDuplicateLike() {

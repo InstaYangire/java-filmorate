@@ -109,6 +109,22 @@ public class InMemoryFilmStorage implements FilmStorage {
                 .toList();
     }
 
+    // Getting popular films with optional filters (genreId, year)
+    @Override
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        return films.values().stream()
+                // фильтр по жанру (если задан)
+                .filter(film -> genreId == null ||
+                        (film.getGenres() != null && film.getGenres().stream().anyMatch(g -> g.getId() == genreId)))
+                // фильтр по году (если задан)
+                .filter(film -> year == null ||
+                        (film.getReleaseDate() != null && film.getReleaseDate().getYear() == year))
+                // сортировка по количеству лайков
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(count)
+                .toList();
+    }
+
     // __________Likes_____________
     // Adding like
     @Override

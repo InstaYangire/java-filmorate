@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 
 import java.util.Comparator;
 import java.util.List;
@@ -123,6 +124,14 @@ public class FilmService {
         List<Film> results = filmStorage.searchFilms(query, by);
         log.info("Search completed. Found {} films.", results.size());
         return results;
+    }
+
+    // Getting list of popular films with optional filters
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        List<Film> films = filmStorage.getPopularFilms(count, genreId, year);
+        log.info("Request for top {} popular films with filters genreId={}, year={} → found {} films",
+                count, genreId, year, films.size());
+        return films;
     }
 
     //___________Likes__________
