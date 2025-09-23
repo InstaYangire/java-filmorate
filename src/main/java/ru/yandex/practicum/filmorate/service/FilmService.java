@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -177,6 +178,16 @@ public class FilmService {
         List<Film> listFilms = filmStorage.getCommonFilms(userId, friendId);
         log.info("User {} and user {} have {} common films.", userId, friendId, listFilms.size());
         return listFilms;
+    }
+
+    // Getting recommendations
+    public List<Film> getRecommendations(int userId) {
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        List<Film> listFilms = filmStorage.getRecommendations(userId);
+        log.info("User {} has {} recommendations.", userId, listFilms.size());
+
+        return listFilms != null ? listFilms : Collections.emptyList();
     }
 
     // Validate and replace MPA and genres from services

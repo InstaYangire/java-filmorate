@@ -7,14 +7,18 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
-
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static ru.yandex.practicum.filmorate.validator.FilmValidator.validateFilm;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Integer, Film> films = new HashMap<>();
+    // Storing likes as key pairs in the Map: userId -> Set<filmId>
+    private final Map<Integer, Set<Integer>> userToFilms = new HashMap<>();
+    // Storing likes as key pairs in the Map: filmId -> Set<userId> for quick access
+    private final Map<Integer, Set<Integer>> filmToUsers = new HashMap<>();
     private int nextId = 1;
 
     // Adding a new movie
@@ -136,6 +140,10 @@ public class InMemoryFilmStorage implements FilmStorage {
                                 " has already liked film with id=" + filmId);
                     }
                     film.getLikes().add(userId);
+                    // Adding to userToFilms
+                    userToFilms.computeIfAbsent(userId, k -> new HashSet<>()).add(filmId);
+                    // Adding to filmToUsers
+                    filmToUsers.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
                 },
                 () -> {
                     throw new NotFoundException("Film with id=" + filmId + " not found.");
@@ -147,10 +155,87 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public void removeLike(int filmId, int userId) {
         getFilmById(filmId).ifPresentOrElse(
-                film -> film.getLikes().remove(userId),
+                film -> {
+                    film.getLikes().remove(userId);
+
+                    // Remove from userToFilms
+                    if (userToFilms.containsKey(userId)) {
+                        userToFilms.get(userId).remove(filmId);
+                        if (userToFilms.get(userId).isEmpty()) {
+                            userToFilms.remove(userId);
+                        }
+                    }
+                    // Remove from filmToUsers
+                    if (filmToUsers.containsKey(filmId)) {
+                        filmToUsers.get(filmId).remove(userId);
+                        if (filmToUsers.get(filmId).isEmpty()) {
+                            filmToUsers.remove(filmId);
+                        }
+                    }
+                },
                 () -> {
                     throw new NotFoundException("Film with id=" + filmId + " not found.");
                 }
         );
+    }
+
+    // Getting Recommendations
+    @Override
+    public List<Film> getRecommendations(int userId) {
+        // Checking if the user has likes
+        if (!userToFilms.containsKey(userId) || userToFilms.get(userId).isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Finding the most similar user
+        Integer similarUserId = findMostSimilarUser(userId);
+
+        if (similarUserId == null) {
+            return Collections.emptyList();
+        }
+
+        // Getting recommendations
+        Set<Integer> recommendedFilmIds = getRecommendedFilmIds(userId, similarUserId);
+        return getFilmsSortedByPopularity(recommendedFilmIds);
+    }
+
+    private Integer findMostSimilarUser(int targetUserId) {
+        Set<Integer> targetUserFilms = userToFilms.get(targetUserId);
+
+        return userToFilms.entrySet().stream()
+                .filter(entry -> entry.getKey() != targetUserId) // not the target user
+                .filter(entry -> !entry.getValue().isEmpty()) // the user has likes
+                .map(entry -> {
+                    // Finding common films
+                    Set<Integer> commonFilms = new HashSet<>(targetUserFilms);
+                    commonFilms.retainAll(entry.getValue());
+                    return new AbstractMap.SimpleEntry<>(entry.getKey(), commonFilms.size());
+                })
+                .filter(entry -> entry.getValue() > 0) // there are common likes
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+    }
+
+    private Set<Integer> getRecommendedFilmIds(int targetUserId, int similarUserId) {
+        Set<Integer> targetUserFilms = userToFilms.get(targetUserId);
+        Set<Integer> similarUserFilms = userToFilms.get(similarUserId);
+
+        // Films of a similar user that were not liked by the target user
+        Set<Integer> recommended = new HashSet<>(similarUserFilms);
+        recommended.removeAll(targetUserFilms);
+        return recommended;
+    }
+
+    private List<Film> getFilmsSortedByPopularity(Set<Integer> filmIds) {
+        return filmIds.stream()
+                .map(films::get)
+                .filter(Objects::nonNull)
+                .sorted((f1, f2) -> {
+                    int likes1 = filmToUsers.getOrDefault(f1.getId(), Collections.emptySet()).size();
+                    int likes2 = filmToUsers.getOrDefault(f2.getId(), Collections.emptySet()).size();
+                    return Integer.compare(likes2, likes1); // descending order
+                })
+                .collect(Collectors.toList());
     }
 }
