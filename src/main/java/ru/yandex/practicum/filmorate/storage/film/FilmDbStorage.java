@@ -294,32 +294,32 @@ public class FilmDbStorage implements FilmStorage {
     // Getting recommendations
     public List<Film> getRecommendations(int userId) {
         String sql = """
-                SELECT f.id AS film_id, f.name AS film_name, f.description, f.release_date, f.duration,
-                m.id AS mpa_id, m.name AS mpa_name
-                FROM films f
-                JOIN mpa_ratings m ON f.mpa_id = m.id
-                JOIN film_likes l ON f.id = l.film_id
-                WHERE l.user_id IN (
-                                    SELECT user_id
-                                    FROM film_likes
-                                    WHERE film_id IN (
-                                                      SELECT film_id
-                                                      FROM film_likes
-                                                      WHERE user_id = ?
-                                                     )
-                                    AND user_id <> ?
-                                    GROUP BY user_id
-                                    ORDER BY count(film_id)
-                                    LIMIT 1
-                                   )
-                AND l.film_id NOT IN (
-                                      SELECT film_id
-                                      FROM film_likes
-                                      WHERE user_id = ?
-                                     )
-                GROUP BY f.id
-                ORDER BY count(l.film_id)
-            """;
+                    SELECT f.id AS film_id, f.name AS film_name, f.description, f.release_date, f.duration,
+                    m.id AS mpa_id, m.name AS mpa_name
+                    FROM films f
+                    JOIN mpa_ratings m ON f.mpa_id = m.id
+                    JOIN film_likes l ON f.id = l.film_id
+                    WHERE l.user_id IN (
+                                        SELECT user_id
+                                        FROM film_likes
+                                        WHERE film_id IN (
+                                                          SELECT film_id
+                                                          FROM film_likes
+                                                          WHERE user_id = ?
+                                                         )
+                                        AND user_id <> ?
+                                        GROUP BY user_id
+                                        ORDER BY count(film_id)
+                                        LIMIT 1
+                                       )
+                    AND l.film_id NOT IN (
+                                          SELECT film_id
+                                          FROM film_likes
+                                          WHERE user_id = ?
+                                         )
+                    GROUP BY f.id
+                    ORDER BY count(l.film_id)
+                """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), userId, userId, userId);
     }
