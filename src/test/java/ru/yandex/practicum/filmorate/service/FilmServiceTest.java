@@ -2,12 +2,16 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.DirectorStorage;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 import ru.yandex.practicum.filmorate.storage.film.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
@@ -21,6 +25,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FilmServiceTest {
+    private static final Logger log = LoggerFactory.getLogger(FilmServiceTest.class);
     private FilmService filmService;
     private UserService userService;
 
