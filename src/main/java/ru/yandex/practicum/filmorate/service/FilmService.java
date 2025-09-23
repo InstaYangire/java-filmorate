@@ -125,6 +125,14 @@ public class FilmService {
         return results;
     }
 
+    // Getting list of popular films with optional filters
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        List<Film> films = filmStorage.getPopularFilms(count, genreId, year);
+        log.info("Request for top {} popular films with filters genreId={}, year={} → found {} films",
+                count, genreId, year, films.size());
+        return films;
+    }
+
     //___________Likes__________
     // Adding a like to a movie
     public void addLike(int filmId, int userId) {

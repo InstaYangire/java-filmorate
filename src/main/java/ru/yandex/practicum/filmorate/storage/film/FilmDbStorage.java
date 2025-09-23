@@ -104,6 +104,39 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs));
     }
 
+    // Getting popular films
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT f.*
+                FROM films f
+                LEFT JOIN film_likes fl ON f.id = fl.film_id
+                LEFT JOIN film_genres fg ON f.id = fg.film_id
+                WHERE 1=1
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (genreId != null) {
+            sql.append(" AND fg.genre_id = ?");
+            params.add(genreId);
+        }
+
+        if (year != null) {
+            sql.append(" AND EXTRACT(YEAR FROM f.release_date) = ?");
+            params.add(year);
+        }
+
+        sql.append("""
+                GROUP BY f.id
+                ORDER BY COUNT(fl.user_id) DESC
+                LIMIT ?
+                """);
+
+        params.add(count);
+
+        return jdbcTemplate.query(sql.toString(), params.toArray(), (rs, rowNum) -> mapRowToFilm(rs));
+    }
+
     // Getting common films
     @Override
     public List<Film> getCommonFilms(int userId, int friendId) {
@@ -242,13 +275,13 @@ public class FilmDbStorage implements FilmStorage {
         String whereClause = String.join(" OR ", conditions);
 
         String sql = """
-        SELECT DISTINCT f.*
-        FROM films f
-        LEFT JOIN film_directors fd ON f.id = fd.film_id
-        LEFT JOIN directors d ON fd.director_id = d.id
-        WHERE %s
-        GROUP BY f.id
-        """.formatted(whereClause);
+                SELECT DISTINCT f.*
+                FROM films f
+                LEFT JOIN film_directors fd ON f.id = fd.film_id
+                LEFT JOIN directors d ON fd.director_id = d.id
+                WHERE %s
+                GROUP BY f.id
+                """.formatted(whereClause);
 
         List<Object> params = new ArrayList<>();
         for (int i = 0; i < conditions.size(); i++) {

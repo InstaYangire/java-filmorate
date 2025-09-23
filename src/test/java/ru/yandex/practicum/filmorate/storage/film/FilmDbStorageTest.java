@@ -370,6 +370,92 @@ class FilmDbStorageTest {
                 .anyMatch(d -> d.getName().equals("Director 1")));
     }
 
+    // Test: Should return popular films filtered by genre
+    @Test
+    void shouldReturnPopularFilmsFilteredByGenre() {
+        User user = createSampleUser();
+
+        Film film1 = createSampleFilm(); // жанр 1
+        Film film2 = createSampleFilm(); // жанр 1
+        Film film3 = createSampleFilm();
+        film3.setGenres(Set.of(new Genre(2, null))); // жанр 2
+
+        Film saved1 = filmDbStorage.addFilm(film1);
+        Film saved2 = filmDbStorage.addFilm(film2);
+        Film saved3 = filmDbStorage.addFilm(film3);
+
+        filmDbStorage.addLike(saved1.getId(), user.getId());
+        filmDbStorage.addLike(saved2.getId(), user.getId());
+        filmDbStorage.addLike(saved3.getId(), user.getId());
+
+        List<Film> results = filmDbStorage.getPopularFilms(10, 1, null);
+
+        assertFalse(results.isEmpty());
+        assertTrue(results.stream().allMatch(f ->
+                f.getGenres().stream().anyMatch(g -> g.getId() == 1)));
+    }
+
+    // Test: Should return popular films filtered by year
+    @Test
+    void shouldReturnPopularFilmsFilteredByYear() {
+        User user = createSampleUser();
+
+        Film film1 = createSampleFilm();
+        film1.setReleaseDate(LocalDate.of(2020, 1, 1));
+
+        Film film2 = createSampleFilm();
+        film2.setReleaseDate(LocalDate.of(2020, 5, 5));
+
+        Film film3 = createSampleFilm();
+        film3.setReleaseDate(LocalDate.of(2021, 1, 1));
+
+        Film saved1 = filmDbStorage.addFilm(film1);
+        Film saved2 = filmDbStorage.addFilm(film2);
+        Film saved3 = filmDbStorage.addFilm(film3);
+
+        filmDbStorage.addLike(saved1.getId(), user.getId());
+        filmDbStorage.addLike(saved2.getId(), user.getId());
+        filmDbStorage.addLike(saved3.getId(), user.getId());
+
+        List<Film> results = filmDbStorage.getPopularFilms(10, null, 2020);
+
+        assertEquals(2, results.size());
+        assertTrue(results.stream().allMatch(f -> f.getReleaseDate().getYear() == 2020));
+    }
+
+    // Test: Should return popular films filtered by genre and year
+    @Test
+    void shouldReturnPopularFilmsFilteredByGenreAndYear() {
+        User user = createSampleUser();
+
+        Film film1 = createSampleFilm();
+        film1.setReleaseDate(LocalDate.of(2019, 3, 3));
+        film1.setGenres(Set.of(new Genre(1, null)));
+
+        Film film2 = createSampleFilm();
+        film2.setReleaseDate(LocalDate.of(2019, 6, 6));
+        film2.setGenres(Set.of(new Genre(1, null)));
+
+        Film film3 = createSampleFilm();
+        film3.setReleaseDate(LocalDate.of(2020, 1, 1));
+        film3.setGenres(Set.of(new Genre(2, null)));
+
+        Film saved1 = filmDbStorage.addFilm(film1);
+        Film saved2 = filmDbStorage.addFilm(film2);
+        Film saved3 = filmDbStorage.addFilm(film3);
+
+        filmDbStorage.addLike(saved1.getId(), user.getId());
+        filmDbStorage.addLike(saved2.getId(), user.getId());
+        filmDbStorage.addLike(saved3.getId(), user.getId());
+
+        List<Film> results = filmDbStorage.getPopularFilms(10, 1, 2019);
+
+        assertEquals(2, results.size());
+        assertTrue(results.stream().allMatch(f ->
+                f.getGenres().stream().anyMatch(g -> g.getId() == 1)
+                        && f.getReleaseDate().getYear() == 2019));
+    }
+
     // ----------- Search Tests -----------
 
     // Test: Film should be found by title
