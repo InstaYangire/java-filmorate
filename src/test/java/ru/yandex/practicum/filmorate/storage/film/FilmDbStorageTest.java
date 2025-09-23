@@ -499,4 +499,89 @@ class FilmDbStorageTest {
         assertEquals(1, resultsByDescription.size());
         assertEquals(1, resultsByDirector.size());
     }
+
+    // ----------- Recommendations Tests -----------
+    // Test: Should return empty list (0 recommendations) when user has no likes
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoLikes() {
+        User userOne = createSampleUser();
+        User userTwo = createSampleUser();
+        Film film = createSampleFilm();
+        Film savedFilm = filmDbStorage.addFilm(film);
+
+        filmDbStorage.addLike(savedFilm.getId(), userTwo.getId());
+
+        Set<Integer> likes = filmDbStorage.getFilmById(savedFilm.getId()).get().getLikes();
+        assertFalse(likes.contains(userOne.getId()));
+        assertTrue(likes.contains(userTwo.getId()));
+
+        List<Film> recommendations = filmDbStorage.getRecommendations(userOne.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    // Should return empty list when user has likes but no similar users
+    @Test
+    void shouldReturnEmptyListWhenUserHasLikesButNoSimilarUsers() {
+        User userOne = createSampleUser();
+        User userTwo = createSampleUser();
+        Film filmOne = createSampleFilm();
+        Film filmTwo = createSampleFilm();
+        Film savedFilmOne = filmDbStorage.addFilm(filmOne);
+        Film savedFilmTwo = filmDbStorage.addFilm(filmTwo);
+
+        filmDbStorage.addLike(savedFilmOne.getId(), userOne.getId());
+        filmDbStorage.addLike(savedFilmTwo.getId(), userTwo.getId());
+
+        Set<Integer> likesOne = filmDbStorage.getFilmById(savedFilmOne.getId()).get().getLikes();
+        Set<Integer> likesTwo = filmDbStorage.getFilmById(savedFilmTwo.getId()).get().getLikes();
+        assertTrue(likesOne.contains(userOne.getId()));
+        assertFalse(likesOne.contains(userTwo.getId()));
+        assertFalse(likesTwo.contains(userOne.getId()));
+        assertTrue(likesTwo.contains(userTwo.getId()));
+
+        List<Film> recommendations = filmDbStorage.getRecommendations(userOne.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    // Should return recommendations when similar users exist
+    @Test
+    void shouldReturnRecommendationsWhenSimilarUsersExist() {
+        User userOne = createSampleUser();
+        User userTwo = createSampleUser();
+        Film filmOne = createSampleFilm();
+        Film filmTwo = createSampleFilm();
+        filmTwo.setName("Recommended Film");
+        Film savedFilmOne = filmDbStorage.addFilm(filmOne);
+        Film savedFilmTwo = filmDbStorage.addFilm(filmTwo);
+
+        filmDbStorage.addLike(savedFilmOne.getId(), userOne.getId());
+        filmDbStorage.addLike(savedFilmOne.getId(), userTwo.getId());
+        filmDbStorage.addLike(savedFilmTwo.getId(), userTwo.getId());
+
+        List<Film> recommendations = filmDbStorage.getRecommendations(userOne.getId());
+        assertFalse(recommendations.isEmpty());
+        assertEquals(1, recommendations.size());
+        assertEquals("Recommended Film", recommendations.get(0).getName());
+    }
+
+    // Should not return already liked films
+    @Test
+    void shouldNotReturnAlreadyLikedFilms() {
+        User userOne = createSampleUser();
+        User userTwo = createSampleUser();
+        Film filmOne = createSampleFilm();
+        Film filmTwo = createSampleFilm();
+        Film savedFilmOne = filmDbStorage.addFilm(filmOne);
+        Film savedFilmTwo = filmDbStorage.addFilm(filmTwo);
+
+        filmDbStorage.addLike(savedFilmOne.getId(), userOne.getId());
+        filmDbStorage.addLike(savedFilmOne.getId(), userTwo.getId());
+        filmDbStorage.addLike(savedFilmTwo.getId(), userOne.getId());
+        filmDbStorage.addLike(savedFilmTwo.getId(), userTwo.getId());
+
+        List<Film> recommendationsOne = filmDbStorage.getRecommendations(userOne.getId());
+        List<Film> recommendationsTwo = filmDbStorage.getRecommendations(userTwo.getId());
+        assertTrue(recommendationsOne.isEmpty());
+        assertTrue(recommendationsTwo.isEmpty());
+    }
 }

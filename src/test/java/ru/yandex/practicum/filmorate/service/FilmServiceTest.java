@@ -19,6 +19,7 @@ import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -210,5 +211,83 @@ class FilmServiceTest {
         );
 
         assertEquals("Invalid search parameter: invalidField", ex.getMessage());
+    }
+
+    // ----------- Recommendations Tests -----------
+    // Test: Should return empty list (0 recommendations) when user has no likes
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoLikes() {
+        User u1 = registerUser("u1", "u1@mail.com");
+        User u2 = registerUser("u2", "u2@mail.com");
+        Film f1 = registerFilm("Film 1");
+
+        filmService.addLike(f1.getId(), u2.getId());
+
+        Set<Integer> likes = filmService.getFilmById(f1.getId()).getLikes();
+        assertFalse(likes.contains(u1.getId()));
+        assertTrue(likes.contains(u2.getId()));
+
+        List<Film> recommendations = filmService.getRecommendations(u1.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    // Should return empty list when user has likes but no similar users
+    @Test
+    void shouldReturnEmptyListWhenUserHasLikesButNoSimilarUsers() {
+        User u1 = registerUser("u1", "u1@mail.com");
+        User u2 = registerUser("u2", "u2@mail.com");
+        Film f1 = registerFilm("Film 1");
+        Film f2 = registerFilm("Film 2");
+
+        filmService.addLike(f1.getId(), u1.getId());
+        filmService.addLike(f2.getId(), u2.getId());
+
+        Set<Integer> likes1 = filmService.getFilmById(f1.getId()).getLikes();
+        Set<Integer> likes2 = filmService.getFilmById(f2.getId()).getLikes();
+        assertTrue(likes1.contains(u1.getId()));
+        assertFalse(likes1.contains(u2.getId()));
+        assertFalse(likes2.contains(u1.getId()));
+        assertTrue(likes2.contains(u2.getId()));
+
+        List<Film> recommendations = filmService.getRecommendations(u1.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    // Should return recommendations when similar users exist
+    @Test
+    void shouldReturnRecommendationsWhenSimilarUsersExist() {
+        User u1 = registerUser("u1", "u1@mail.com");
+        User u2 = registerUser("u2", "u2@mail.com");
+        Film f1 = registerFilm("Film 1");
+        Film f2 = registerFilm("Film 2");
+        f2.setName("Recommended Film");
+
+        filmService.addLike(f1.getId(), u1.getId());
+        filmService.addLike(f1.getId(), u2.getId());
+        filmService.addLike(f2.getId(), u2.getId());
+
+        List<Film> recommendations = filmService.getRecommendations(u1.getId());
+        assertFalse(recommendations.isEmpty());
+        assertEquals(1, recommendations.size());
+        assertEquals("Recommended Film", recommendations.get(0).getName());
+    }
+
+    // Should not return already liked films
+    @Test
+    void shouldNotReturnAlreadyLikedFilms() {
+        User u1 = registerUser("u1", "u1@mail.com");
+        User u2 = registerUser("u2", "u2@mail.com");
+        Film f1 = registerFilm("Film 1");
+        Film f2 = registerFilm("Film 2");
+
+        filmService.addLike(f1.getId(), u1.getId());
+        filmService.addLike(f1.getId(), u2.getId());
+        filmService.addLike(f2.getId(), u1.getId());
+        filmService.addLike(f2.getId(), u2.getId());
+
+        List<Film> recommendationsOne = filmService.getRecommendations(u1.getId());
+        List<Film> recommendationsTwo = filmService.getRecommendations(u2.getId());
+        assertTrue(recommendationsOne.isEmpty());
+        assertTrue(recommendationsTwo.isEmpty());
     }
 }
