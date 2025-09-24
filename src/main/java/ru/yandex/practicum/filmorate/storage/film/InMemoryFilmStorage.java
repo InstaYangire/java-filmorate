@@ -199,6 +199,29 @@ public class InMemoryFilmStorage implements FilmStorage {
         return getFilmsSortedByPopularity(recommendedFilmIds);
     }
 
+    // Deleting a film
+    @Override
+    public void deleteFilm(int id) {
+        if (!films.containsKey(id)) {
+            throw new NotFoundException("Film with id=" + id + " not found.");
+        }
+
+        if (filmToUsers.containsKey(id)) {
+            Set<Integer> usersWhoLiked = filmToUsers.get(id);
+            for (int userId : usersWhoLiked) {
+                if (userToFilms.containsKey(userId)) {
+                    userToFilms.get(userId).remove(id);
+                    if (userToFilms.get(userId).isEmpty()) {
+                        userToFilms.remove(userId);
+                    }
+                }
+            }
+            filmToUsers.remove(id);
+        }
+
+        films.remove(id);
+    }
+
     private Integer findMostSimilarUser(int targetUserId) {
         Set<Integer> targetUserFilms = userToFilms.get(targetUserId);
 

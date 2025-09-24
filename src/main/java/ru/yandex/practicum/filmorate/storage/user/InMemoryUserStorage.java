@@ -47,4 +47,17 @@ public class InMemoryUserStorage implements UserStorage {
     public List<User> getAllUsers() {
         return new ArrayList<>(users.values());
     }
+
+    // Deleting user by Id
+    @Override
+    public void deleteUser(int id) {
+        if (!users.containsKey(id)) {
+            throw new NotFoundException("User with id=" + id + " not found");
+        }
+        for (User user : users.values()) {
+            user.getFriends().remove(id);
+        }
+
+        users.remove(id);
+    }
 }

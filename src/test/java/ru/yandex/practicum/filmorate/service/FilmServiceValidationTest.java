@@ -41,7 +41,7 @@ class FilmServiceValidationTest {
         FilmStorage filmStorage = new InMemoryFilmStorage();
         UserStorage userStorage = new InMemoryUserStorage();
 
-        DirectorStorage directorStorage = new DirectorDbStorage(jdbcTemplate); // Нужно создать этот класс
+        DirectorStorage directorStorage = new DirectorDbStorage(jdbcTemplate);
         DirectorService directorService = new DirectorService(directorStorage);
 
         FeedService feedService = new FeedService(null, null);

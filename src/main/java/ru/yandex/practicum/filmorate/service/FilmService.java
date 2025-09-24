@@ -194,6 +194,14 @@ public class FilmService {
         return listFilms != null ? listFilms : Collections.emptyList();
     }
 
+    // Deleting a film
+    public void deleteFilm(int id) {
+        log.info("Received request to delete film with id={}", id);
+        getFilmById(id);
+        filmStorage.deleteFilm(id);
+        log.info("Film with id={} deleted successfully", id);
+    }
+
     // Validate and replace MPA and genres from services
     private void validateAndSetMpaAndGenres(Film film) {
         if (film.getMpa() != null) {

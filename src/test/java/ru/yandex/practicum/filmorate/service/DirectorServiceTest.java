@@ -24,6 +24,8 @@ public class DirectorServiceTest {
 
     private JdbcTemplate jdbcTemplate;
 
+    // ____________Helpers___________
+
     private Director makeValidDirector(String name) {
         Director director = new Director();
         director.setName(name);
@@ -84,6 +86,8 @@ public class DirectorServiceTest {
         DirectorStorage directorStorage = new DirectorDbStorage(jdbcTemplate);
         directorService = new DirectorService(directorStorage);
     }
+
+    // ____________Tests___________
 
     @Test
     void shouldGetAllDirectors() {

@@ -103,7 +103,7 @@ class FilmServiceTest {
 
         userService = new UserService(userStorage, friendshipService, feedService);
         filmService = new FilmService(filmStorage, userStorage, mpaService, genreService, directorService, jdbcTemplate,
-                 feedService);
+                feedService);
     }
 
     // ____________Tests___________
@@ -319,5 +319,69 @@ class FilmServiceTest {
         List<Film> recommendationsTwo = filmService.getRecommendations(u2.getId());
         assertTrue(recommendationsOne.isEmpty());
         assertTrue(recommendationsTwo.isEmpty());
+    }
+
+    // Should delete film successfully
+    @Test
+    void shouldDeleteFilmSuccessfully() {
+        Film film = registerFilm("Film to delete");
+        int filmId = film.getId();
+
+        assertDoesNotThrow(() -> filmService.getFilmById(filmId));
+
+        assertDoesNotThrow(() -> filmService.deleteFilm(filmId));
+
+        assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
+                () -> filmService.getFilmById(filmId));
+    }
+
+    // Should throw exception when deleting non-existent film
+    @Test
+    void shouldThrowWhenDeletingNonExistentFilm() {
+        int nonExistentFilmId = 9999;
+
+        assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
+                () -> filmService.getFilmById(nonExistentFilmId));
+
+        assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
+                () -> filmService.deleteFilm(nonExistentFilmId));
+    }
+
+    // hould remove film likes when film is deleted
+    @Test
+    void shouldRemoveFilmLikesWhenFilmIsDeleted() {
+        // Создаем фильм и пользователей
+        Film film = registerFilm("Film with likes");
+        User user1 = registerUser("user1", "user1@mail.com");
+        User user2 = registerUser("user2", "user2@mail.com");
+
+        int filmId = film.getId();
+        int userId1 = user1.getId();
+        int userId2 = user2.getId();
+
+        filmService.addLike(filmId, userId1);
+        filmService.addLike(filmId, userId2);
+
+        Film filmBeforeDelete = filmService.getFilmById(filmId);
+        assertEquals(2, filmBeforeDelete.getLikes().size());
+        assertTrue(filmBeforeDelete.getLikes().contains(userId1));
+        assertTrue(filmBeforeDelete.getLikes().contains(userId2));
+
+        assertDoesNotThrow(() -> filmService.deleteFilm(filmId));
+
+        assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
+                () -> filmService.getFilmById(filmId));
+
+        assertDoesNotThrow(() -> userService.getUserById(userId1));
+        assertDoesNotThrow(() -> userService.getUserById(userId2));
+
+        Film newFilm = registerFilm("New film after deletion");
+        assertDoesNotThrow(() -> filmService.addLike(newFilm.getId(), userId1));
+        assertDoesNotThrow(() -> filmService.addLike(newFilm.getId(), userId2));
+
+        Film updatedNewFilm = filmService.getFilmById(newFilm.getId());
+        assertEquals(2, updatedNewFilm.getLikes().size());
+        assertTrue(updatedNewFilm.getLikes().contains(userId1));
+        assertTrue(updatedNewFilm.getLikes().contains(userId2));
     }
 }

@@ -670,4 +670,83 @@ class FilmDbStorageTest {
         assertTrue(recommendationsOne.isEmpty());
         assertTrue(recommendationsTwo.isEmpty());
     }
+
+    // Should throw exception when deleting film that doesn't exist
+    @Test
+    void shouldThrowNotFoundExceptionWhenDeletingNonExistentFilm() {
+        int nonExistentFilmId = 9999;
+
+        assertFalse(filmDbStorage.getFilmById(nonExistentFilmId).isPresent());
+
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> filmDbStorage.deleteFilm(nonExistentFilmId)
+        );
+
+        assertEquals("Film with id=" + nonExistentFilmId + " not found.", exception.getMessage());
+    }
+
+    // Should maintain database integrity after film deletion
+    @Test
+    void shouldMaintainDatabaseIntegrityAfterFilmDeletion() {
+        Film film1 = createSampleFilm();
+        film1.setName("First Film");
+        Film film2 = createSampleFilm();
+        film2.setName("Second Film");
+
+        Film savedFilm1 = filmDbStorage.addFilm(film1);
+        Film savedFilm2 = filmDbStorage.addFilm(film2);
+
+        User user = createSampleUser();
+        filmDbStorage.addLike(savedFilm1.getId(), user.getId());
+        filmDbStorage.addLike(savedFilm2.getId(), user.getId());
+
+        List<Film> allFilmsBefore = filmDbStorage.getAllFilms();
+        assertEquals(2, allFilmsBefore.size());
+
+        Set<Integer> userLikesBefore = filmDbStorage.getFilmById(savedFilm1.getId()).get().getLikes();
+        assertTrue(userLikesBefore.contains(user.getId()));
+
+        filmDbStorage.deleteFilm(savedFilm1.getId());
+
+        assertTrue(filmDbStorage.getFilmById(savedFilm2.getId()).isPresent());
+        Film remainingFilm = filmDbStorage.getFilmById(savedFilm2.getId()).get();
+        assertEquals("Second Film", remainingFilm.getName());
+
+        Set<Integer> remainingFilmLikes = remainingFilm.getLikes();
+        assertTrue(remainingFilmLikes.contains(user.getId()));
+        assertEquals(1, remainingFilmLikes.size());
+
+        assertTrue(userDbStorage.getUserById(user.getId()).isPresent());
+
+        List<Film> allFilmsAfter = filmDbStorage.getAllFilms();
+        assertEquals(1, allFilmsAfter.size());
+        assertEquals("Second Film", allFilmsAfter.get(0).getName());
+    }
+
+    //Should handle deletion of film with genres correctly
+    @Test
+    void shouldHandleDeletionOfFilmWithGenres() {
+        Film film = createSampleFilm();
+        film.setGenres(Set.of(new Genre(1, "Комедия"), new Genre(2, "Драма")));
+
+        Film savedFilm = filmDbStorage.addFilm(film);
+        int filmId = savedFilm.getId();
+
+        Optional<Film> filmBeforeDelete = filmDbStorage.getFilmById(filmId);
+        assertTrue(filmBeforeDelete.isPresent());
+        assertEquals(2, filmBeforeDelete.get().getGenres().size());
+
+        filmDbStorage.deleteFilm(filmId);
+
+        assertFalse(filmDbStorage.getFilmById(filmId).isPresent());
+
+        Film newFilm = createSampleFilm();
+        newFilm.setName("New Film with Same Genres");
+        newFilm.setGenres(Set.of(new Genre(1, "Комедия"), new Genre(2, "Драма")));
+
+        Film savedNewFilm = filmDbStorage.addFilm(newFilm);
+        assertTrue(filmDbStorage.getFilmById(savedNewFilm.getId()).isPresent());
+        assertEquals(2, filmDbStorage.getFilmById(savedNewFilm.getId()).get().getGenres().size());
+    }
 }

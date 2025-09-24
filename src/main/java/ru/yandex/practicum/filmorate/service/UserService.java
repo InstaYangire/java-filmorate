@@ -115,4 +115,15 @@ public class UserService {
         log.info("Request for common friends of users with id={} and id={}. Quantity: {}", userId, otherId, commonFriends.size());
         return commonFriends;
     }
+
+    // Deleting user
+    public void deleteUser(int id) {
+        log.info("Received request to delete user with id={}", id);
+        if (id <= 0) {
+            throw new ValidationException("User id must be more than 0.");
+        }
+        getUserById(id);
+        userStorage.deleteUser(id);
+        log.info("User with id={} deleted successfully", id);
+    }
 }
