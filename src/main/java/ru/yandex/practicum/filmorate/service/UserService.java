@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -18,11 +20,15 @@ import static ru.yandex.practicum.filmorate.validator.UserValidator.validate;
 public class UserService {
     private final UserStorage userStorage;
     private final FriendshipService friendshipService;
+    private final FeedService feedService;
 
     @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage, FriendshipService friendshipService) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage,
+                       FriendshipService friendshipService,
+                       FeedService feedService) {
         this.userStorage = userStorage;
         this.friendshipService = friendshipService;
+        this.feedService = feedService;
     }
 
     //___________User____________
@@ -68,6 +74,8 @@ public class UserService {
 
         friendshipService.addFriend(userId, friendId);
 
+        feedService.addFeed(userId, EventType.FRIEND, Operation.ADD, friendId);
+
         log.info("User with id={} added user with id={} as a friend.", userId, friendId);
     }
 
@@ -79,6 +87,7 @@ public class UserService {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
+        feedService.addFeed(userId, EventType.FRIEND, Operation.REMOVE, friendId);
         log.info("User with id={} removed user with id={} from friends.", userId, friendId);
         return user;
     }

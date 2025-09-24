@@ -7,9 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
-import ru.yandex.practicum.filmorate.model.Director;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -31,18 +29,23 @@ public class FilmService {
     private final GenreService genreService;
     private final DirectorService directorService;
     private final JdbcTemplate jdbcTemplate;
+    private final FeedService feedService;
 
     @Autowired
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
                        @Qualifier("userDbStorage") UserStorage userStorage,
                        @Qualifier("mpaService") MpaService mpaService,
-                       @Qualifier("genreService") GenreService genreService, DirectorService directorService, JdbcTemplate jdbcTemplate) {
+                       @Qualifier("genreService") GenreService genreService,
+                       DirectorService directorService,
+                       JdbcTemplate jdbcTemplate,
+                       FeedService feedService) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaService = mpaService;
         this.genreService = genreService;
         this.directorService = directorService;
         this.jdbcTemplate = jdbcTemplate;
+        this.feedService = feedService;
     }
 
     // ___________Films___________
@@ -143,6 +146,7 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
         filmStorage.addLike(filmId, userId);
+        feedService.addFeed(userId, EventType.LIKE, Operation.ADD, filmId);
         log.info("User with id={} liked film with id={}", userId, filmId);
     }
 
@@ -154,7 +158,7 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
         filmStorage.removeLike(filmId, userId); // Удаляем из базы
-
+        feedService.addFeed(userId, EventType.LIKE, Operation.REMOVE, filmId);
         log.info("User with id={} removed like from film with id={}", userId, filmId);
     }
 

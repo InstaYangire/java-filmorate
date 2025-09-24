@@ -5,8 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.film.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.GenreDbStorage;
@@ -24,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class FilmServiceTest {
     private FilmService filmService;
     private UserService userService;
+    private FeedService feedService;
 
     // ____________Helpers___________
 
@@ -78,18 +78,32 @@ class FilmServiceTest {
         GenreService genreService = new GenreService(genreDbStorage);
 
         FilmService filmServiceWithoutDirector = new FilmService(
-                filmStorage, userStorage, mpaService, genreService, null, jdbcTemplate);
+                filmStorage, userStorage, mpaService, genreService, null, jdbcTemplate, feedService);
 
         DirectorService directorService = new DirectorService(directorStorage);
 
         filmService = new FilmService(
-                filmStorage, userStorage, mpaService, genreService, directorService, jdbcTemplate);
+                filmStorage, userStorage, mpaService, genreService, directorService, jdbcTemplate, feedService);
+
+        FeedService feedService = new FeedService(null, null) {
+            public void addFeed(int userId, EventType eventType, Operation operation, int entityId) {
+
+            }
+
+            public List<Feed> getFeedByUserId(int userId) {
+                return List.of();
+            }
+
+            public void removeUserFeed(int userId) {
+            }
+        };
 
         InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
         FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
 
-        userService = new UserService(userStorage, friendshipService);
-        filmService = new FilmService(filmStorage, userStorage, mpaService, genreService, directorService, jdbcTemplate);
+        userService = new UserService(userStorage, friendshipService, feedService);
+        filmService = new FilmService(filmStorage, userStorage, mpaService, genreService, directorService, jdbcTemplate,
+                 feedService);
     }
 
     // ____________Tests___________

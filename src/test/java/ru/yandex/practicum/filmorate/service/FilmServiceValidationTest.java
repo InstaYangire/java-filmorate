@@ -44,13 +44,16 @@ class FilmServiceValidationTest {
         DirectorStorage directorStorage = new DirectorDbStorage(jdbcTemplate); // Нужно создать этот класс
         DirectorService directorService = new DirectorService(directorStorage);
 
+        FeedService feedService = new FeedService(null, null);
+
         filmService = new FilmService(
                 filmStorage,
                 userStorage,
                 mpaService,
                 genreService,
                 directorService,
-                jdbcTemplate
+                jdbcTemplate,
+                feedService
         );
 
     }
