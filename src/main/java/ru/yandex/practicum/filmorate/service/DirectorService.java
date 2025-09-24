@@ -17,23 +17,27 @@ public class DirectorService {
 
     private final DirectorStorage directorStorage;
 
+    // Getting List of all directors
     public List<Director> getAllDirectors() {
         log.info("Request for all directors received");
         return directorStorage.findAll();
     }
 
+    // Getting director by ID
     public Director getDirectorById(int id) {
         log.info("Request for director with id={}", id);
         return directorStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException("Director with id=" + id + " not found."));
     }
 
+    // Creating director
     public Director createDirector(Director director) {
         log.info("Request to create director: {}", director);
         validateDirector(director);
         return directorStorage.create(director);
     }
 
+    // Updating director
     public Director updateDirector(Director director) {
         log.info("Request to update director: {}", director);
         validateDirector(director);
@@ -42,12 +46,14 @@ public class DirectorService {
         return directorStorage.update(director);
     }
 
+    // Deleting director
     public void deleteDirector(int id) {
         log.info("Request to delete director with id={}", id);
         getDirectorById(id);
         directorStorage.delete(id);
     }
 
+    // Validating director
     private void validateDirector(Director director) {
         if (director.getName() == null || director.getName().isBlank()) {
             throw new IllegalArgumentException("Director name cannot be empty");

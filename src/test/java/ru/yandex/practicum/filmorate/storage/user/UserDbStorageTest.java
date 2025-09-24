@@ -104,4 +104,30 @@ class UserDbStorageTest {
 
         assertEquals("User with id=9999 not found.", ex.getMessage());
     }
+
+    @Test
+    void shouldDeleteUserSuccessfully() {
+        User user = createSampleUser();
+        User savedUser = userDbStorage.addUser(user);
+
+        Optional<User> userBeforeDeletion = userDbStorage.getUserById(savedUser.getId());
+        assertTrue(userBeforeDeletion.isPresent());
+
+        userDbStorage.deleteUser(savedUser.getId());
+
+        Optional<User> userAfterDeletion = userDbStorage.getUserById(savedUser.getId());
+        assertFalse(userAfterDeletion.isPresent());
+    }
+
+    @Test
+    void shouldThrowWhenDeletingNonexistentUser() {
+        int nonExistentUserId = 9999;
+
+        NotFoundException ex = assertThrows(
+                NotFoundException.class,
+                () -> userDbStorage.deleteUser(nonExistentUserId)
+        );
+
+        assertEquals("User with id=9999 not found.", ex.getMessage());
+    }
 }

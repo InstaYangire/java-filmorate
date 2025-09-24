@@ -182,12 +182,36 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
     }
 
+    // Getting films by director
     @Override
     public List<Film> getFilmsByDirector(int directorId) {
         String sql = "SELECT f.* FROM films f " +
                 "JOIN film_directors fd ON f.id = fd.film_id " +
                 "WHERE fd.director_id = ? ORDER BY f.id";
         return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), directorId);
+    }
+
+    // Deleting film
+    @Override
+    public void deleteFilm(int id) {
+        getFilmById(id).orElseThrow(() ->
+                new NotFoundException("Film with id=" + id + " not found."));
+
+        jdbcTemplate.update("""
+                DELETE FROM review_likes
+                WHERE review_id IN (SELECT review_id FROM reviews WHERE film_id = ?)
+                """, id);
+
+        jdbcTemplate.update("DELETE FROM reviews WHERE film_id = ?", id);
+        jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ?", id);
+        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", id);
+        jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", id);
+        jdbcTemplate.update("DELETE FROM feed WHERE entity_id = ? AND event_type IN ('LIKE', 'REVIEW')", id);
+        int deleted = jdbcTemplate.update("DELETE FROM films WHERE id = ?", id);
+
+        if (deleted == 0) {
+            throw new NotFoundException("Film with id=" + id + " not found after deletion attempt.");
+        }
     }
 
     // Mapping film directly from current ResultSet

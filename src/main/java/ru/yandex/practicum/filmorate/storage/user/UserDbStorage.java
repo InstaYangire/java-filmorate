@@ -93,4 +93,28 @@ public class UserDbStorage implements UserStorage {
             return user;
         });
     }
+
+    // Deleting user
+    @Override
+    public void deleteUser(int id) {
+        try {
+            getUserById(id).orElseThrow(() ->
+                    new NotFoundException("User with id=" + id + " not found."));
+
+            jdbcTemplate.update("DELETE FROM review_likes WHERE user_id = ?", id);
+            jdbcTemplate.update("DELETE FROM reviews WHERE user_id = ?", id);
+            jdbcTemplate.update("DELETE FROM film_likes WHERE user_id = ?", id);
+            jdbcTemplate.update("DELETE FROM friendships WHERE user_id = ? OR friend_id = ?", id, id);
+            jdbcTemplate.update("DELETE FROM feed WHERE user_id = ?", id);
+
+            int deleted = jdbcTemplate.update("DELETE FROM users WHERE id = ?", id);
+
+            if (deleted == 0) {
+                throw new NotFoundException("User with id=" + id + " not found after deletion attempt.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
 }

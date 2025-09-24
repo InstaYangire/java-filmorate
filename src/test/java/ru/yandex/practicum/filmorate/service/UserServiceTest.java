@@ -147,4 +147,5 @@ class UserServiceTest {
                 service.addFriend(user.getId(), user.getId()));
         assertEquals("User cannot add themselves as a friend.", exception.getMessage());
     }
+
 }

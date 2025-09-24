@@ -23,6 +23,7 @@ public class FeedDbStorage implements FeedStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
+    // Adding feed
     @Override
     public Feed addFeed(Feed feed) {
         String sql = "INSERT INTO feed (timestamp, user_id, event_type, operation, entity_id) " +
@@ -43,12 +44,14 @@ public class FeedDbStorage implements FeedStorage {
         return feed;
     }
 
+    // List user feed
     @Override
     public List<Feed> getFeedByUserId(int userId) {
         String sql = "SELECT * FROM feed WHERE user_id = ? ORDER BY timestamp ASC";
         return jdbcTemplate.query(sql, this::mapRowToFeed, userId);
     }
 
+    // Removing feed by user ID
     @Override
     public void removeFeedByUserId(int userId) {
         String sql = "DELETE FROM feed WHERE user_id = ?";

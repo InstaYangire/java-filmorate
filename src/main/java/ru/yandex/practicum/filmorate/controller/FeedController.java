@@ -19,6 +19,7 @@ public class FeedController {
 
     private final FeedService feedService;
 
+    // Getting feed
     @GetMapping("/{id}/feed")
     public List<Feed> getFeed(@PathVariable int id) {
         log.info("Get feed request for user id={}", id);
