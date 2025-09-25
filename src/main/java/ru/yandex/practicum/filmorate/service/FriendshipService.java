@@ -34,13 +34,12 @@ public class FriendshipService {
         userStorage.getUserById(friendId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + friendId));
 
-        Friendship friendship = new Friendship(userId, friendId, false); // false = not confirmed
+        Friendship friendship = new Friendship(userId, friendId, false);
         friendshipStorage.add(friendship);
     }
 
     // Confirm a friendship request
     public void confirmFriendship(int userId, int friendId) {
-        // Check if there's a pending request from friendId to userId
         List<Friendship> pending = friendshipStorage.getFriendshipsByUserId(friendId).stream()
                 .filter(f -> f.getFriendId() == userId && !f.isConfirmed())
                 .toList();

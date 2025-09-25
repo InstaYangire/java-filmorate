@@ -157,7 +157,7 @@ public class FilmService {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
-        filmStorage.removeLike(filmId, userId); // Удаляем из базы
+        filmStorage.removeLike(filmId, userId);
         feedService.addFeed(userId, EventType.LIKE, Operation.REMOVE, filmId);
         log.info("User with id={} removed like from film with id={}", userId, filmId);
     }

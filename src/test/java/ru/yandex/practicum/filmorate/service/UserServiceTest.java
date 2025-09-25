@@ -39,7 +39,7 @@ class UserServiceTest {
     void setUp() {
         InMemoryUserStorage userStorage = new InMemoryUserStorage();
         InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
-        FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
+
 
         FeedService feedService = new FeedService(null, null) {
             public void addFeed(int userId, EventType eventType, Operation operation, int entityId) {
@@ -53,6 +53,7 @@ class UserServiceTest {
             public void removeUserFeed(int userId) {
             }
         };
+        FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
         service = new UserService(userStorage, friendshipService, feedService);
     }
 
@@ -147,5 +148,4 @@ class UserServiceTest {
                 service.addFriend(user.getId(), user.getId()));
         assertEquals("User cannot add themselves as a friend.", exception.getMessage());
     }
-
 }

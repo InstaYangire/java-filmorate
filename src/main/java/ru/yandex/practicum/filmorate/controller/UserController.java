@@ -42,6 +42,12 @@ public class UserController {
         return userService.getAllUsers();
     }
 
+    // Getting user by id
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable int id) {
+        return userService.getUserById(id);
+    }
+
     //_________Friends_________
     // Adding a new friend
     @PutMapping("/{id}/friends/{friendId}")

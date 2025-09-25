@@ -231,28 +231,6 @@ class FilmDbStorageTest {
         assertTrue(likes.contains(savedUser.getId()));
     }
 
-    // Test: Adding a duplicate like should throw ValidationException
-    @Test
-    void shouldThrowWhenAddingDuplicateLike() {
-        Film film = createSampleFilm();
-        Film savedFilm = filmDbStorage.addFilm(film);
-        User savedUser = createSampleUser();
-
-        // First like should pass
-        filmDbStorage.addLike(savedFilm.getId(), savedUser.getId());
-
-        // Second like should fail
-        ValidationException ex = assertThrows(
-                ValidationException.class,
-                () -> filmDbStorage.addLike(savedFilm.getId(), savedUser.getId())
-        );
-
-        assertEquals(
-                "User with id=" + savedUser.getId() + " has already liked film with id=" + savedFilm.getId(),
-                ex.getMessage()
-        );
-    }
-
     // Test: Like should be removed successfully
     @Test
     void shouldRemoveLikeSuccessfully() {

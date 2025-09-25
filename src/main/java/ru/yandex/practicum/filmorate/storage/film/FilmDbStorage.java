@@ -163,7 +163,7 @@ public class FilmDbStorage implements FilmStorage {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId, userId);
 
         if (count > 0) {
-            throw new ValidationException("User with id=" + userId + " has already liked film with id=" + filmId);
+            return;
         }
 
         jdbcTemplate.update("INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)", filmId, userId);
@@ -206,7 +206,6 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ?", id);
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", id);
         jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", id);
-        jdbcTemplate.update("DELETE FROM feed WHERE entity_id = ? AND event_type IN ('LIKE', 'REVIEW')", id);
         int deleted = jdbcTemplate.update("DELETE FROM films WHERE id = ?", id);
 
         if (deleted == 0) {
@@ -299,12 +298,13 @@ public class FilmDbStorage implements FilmStorage {
         String whereClause = String.join(" OR ", conditions);
 
         String sql = """
-                SELECT DISTINCT f.*
+                SELECT f.*
                 FROM films f
                 LEFT JOIN film_directors fd ON f.id = fd.film_id
                 LEFT JOIN directors d ON fd.director_id = d.id
                 WHERE %s
                 GROUP BY f.id
+                ORDER BY f.id desc
                 """.formatted(whereClause);
 
         List<Object> params = new ArrayList<>();

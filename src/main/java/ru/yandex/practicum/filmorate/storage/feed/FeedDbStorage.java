@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.feed;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -17,6 +18,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FeedDbStorage implements FeedStorage {
@@ -29,10 +31,12 @@ public class FeedDbStorage implements FeedStorage {
         String sql = "INSERT INTO feed (timestamp, user_id, event_type, operation, entity_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
 
+        long ts = (feed.getTimestamp() == 0) ? System.currentTimeMillis() : feed.getTimestamp();
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            stmt.setLong(1, feed.getTimestamp());
+            stmt.setLong(1, ts);
             stmt.setInt(2, feed.getUserId());
             stmt.setString(3, feed.getEventType().name());
             stmt.setString(4, feed.getOperation().name());
@@ -41,13 +45,14 @@ public class FeedDbStorage implements FeedStorage {
         }, keyHolder);
 
         feed.setEventId(Objects.requireNonNull(keyHolder.getKey()).intValue());
+        feed.setTimestamp(ts);
         return feed;
     }
 
     // List user feed
     @Override
     public List<Feed> getFeedByUserId(int userId) {
-        String sql = "SELECT * FROM feed WHERE user_id = ? ORDER BY timestamp ASC";
+        String sql = "SELECT * FROM feed WHERE user_id = ? ORDER BY event_id ASC";
         return jdbcTemplate.query(sql, this::mapRowToFeed, userId);
     }
 

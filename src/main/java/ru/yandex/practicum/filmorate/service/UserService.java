@@ -35,6 +35,9 @@ public class UserService {
     // Creating a new user
     public User addUser(User user) {
         log.info("Received a request to add a new user: {}", user);
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
         validate(user);
         User createdUser = userStorage.addUser(user);
         log.info("User added successfully: {}", createdUser);
@@ -62,7 +65,7 @@ public class UserService {
     // Getting a user by id
     public User getUserById(int id) {
         return userStorage.getUserById(id)
-                .orElseThrow(() -> new NotFoundException("User with id=" + id + " not found."));
+                .orElseThrow(() -> new NotFoundException("User not found."));
     }
 
     //_________Friends_________
@@ -71,6 +74,11 @@ public class UserService {
         if (userId == friendId) {
             throw new ValidationException("User cannot add themselves as a friend.");
         }
+
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        userStorage.getUserById(friendId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + friendId + " not found."));
 
         friendshipService.addFriend(userId, friendId);
 

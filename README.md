@@ -1,22 +1,21 @@
 # java-filmorate
 Template repository for Filmorate project.
 
-##  Схема базы данных
+##  Database schema
 
-Ниже представлена диаграмма базы данных, отражающая структуру проекта Filmorate:
+Below is the database diagram reflecting the structure of the **Filmorate** project:
 
 ![Схема базы данных](./Filmorate.png)
 
-## Примеры SQL-запросов
+## SQL Query Examples
 
-**Получить все фильмы:**
-
+### Get all films
 ```sql
 SELECT * 
 FROM films;
-```
+````
 
-**Получить фильм по ID:**
+### Get film by ID
 
 ```sql
 SELECT * 
@@ -24,14 +23,14 @@ FROM films
 WHERE id = 1;
 ```
 
-**Получить всех пользователей:**
+### Get all users
 
 ```sql
 SELECT * 
 FROM users;
 ```
 
-**Получить пользователя по ID:**
+### Get user by ID
 
 ```sql
 SELECT * 
@@ -39,7 +38,7 @@ FROM users
 WHERE id = 1;
 ```
 
-**Получить топ-10 популярных фильмов по количеству лайков:**
+### Get top 10 popular films by likes count
 
 ```sql
 SELECT f.*, COUNT(fl.user_id) AS likes
@@ -50,17 +49,20 @@ ORDER BY likes DESC
 LIMIT 10;
 ```
 
-**Получить общих друзей двух пользователей:**
+### Get mutual friends of two users
 
 ```sql
 SELECT u.*
 FROM users AS u
 JOIN friendships AS f1 ON u.id = f1.friend_id
 JOIN friendships AS f2 ON u.id = f2.friend_id
-WHERE f1.user_id = 1 AND f2.user_id = 2 AND f1.status = 'CONFIRMED' AND f2.status = 'CONFIRMED';
+WHERE f1.user_id = 1 
+  AND f2.user_id = 2 
+  AND f1.status = 'CONFIRMED' 
+  AND f2.status = 'CONFIRMED';
 ```
 
-**Получить все жанры фильма:**
+### Get all film genres
 
 ```sql
 SELECT g.*
@@ -69,7 +71,7 @@ JOIN film_genres AS fg ON g.id = fg.genre_id
 WHERE fg.film_id = 1;
 ```
 
-**Получить рейтинг фильма:**
+### Get film rating
 
 ```sql
 SELECT mr.*
@@ -78,3 +80,40 @@ JOIN films AS f ON f.mpa_id = mr.id
 WHERE f.id = 1;
 ```
 
+### Get film directors
+
+```sql
+SELECT d.*
+FROM directors d
+JOIN film_directors fd ON d.id = fd.director_id
+WHERE fd.film_id = 1;
+```
+
+### Get films by specific director
+
+```sql
+SELECT f.*
+FROM films f
+JOIN film_directors fd ON f.id = fd.film_id
+JOIN directors d ON fd.director_id = d.id
+WHERE d.name = 'Christopher Nolan';
+```
+
+### Get user feed
+
+```sql
+SELECT *
+FROM feed
+WHERE user_id = 1
+ORDER BY timestamp DESC;
+```
+
+### Get most popular genres
+
+```sql
+SELECT g.name, COUNT(fg.film_id) as film_count
+FROM genres g
+JOIN film_genres fg ON g.id = fg.genre_id
+GROUP BY g.id, g.name
+ORDER BY film_count DESC;
+```

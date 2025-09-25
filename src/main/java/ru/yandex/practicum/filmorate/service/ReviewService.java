@@ -26,25 +26,33 @@ public class ReviewService {
     // Create a new review
     public Review create(Review review) {
         validateUserAndFilm(review.getUserId(), review.getFilmId());
+        validateReviewProps(review);
+
         Review createdReview = reviewStorage.create(review);
-        feedService.addFeed(review.getUserId(), EventType.REVIEW, Operation.ADD, createdReview.getReviewId());
+
+        feedService.addFeed(createdReview.getUserId(),
+                EventType.REVIEW,
+                Operation.ADD,
+                createdReview.getReviewId());
+
         return createdReview;
     }
 
     // Update review
     public Review update(Review review) {
         validateUserAndFilm(review.getUserId(), review.getFilmId());
+        Review existingReview = getById(review.getReviewId());
         Review updatedReview = reviewStorage.update(review);
-        feedService.addFeed(review.getUserId(), EventType.REVIEW, Operation.UPDATE, review.getReviewId());
-        return reviewStorage.update(review);
+        feedService.addFeed(existingReview.getUserId(), EventType.REVIEW, Operation.UPDATE, review.getReviewId());
+        return updatedReview;
     }
 
     // Delete review by ID
     public void delete(int reviewId) {
         checkReview(reviewId);
-        Review review = getById(reviewId);
+        Review existingReview = getById(reviewId);
         reviewStorage.delete(reviewId);
-        feedService.addFeed(review.getUserId(), EventType.REVIEW, Operation.REMOVE, reviewId);
+        feedService.addFeed(existingReview.getUserId(), EventType.REVIEW, Operation.REMOVE, reviewId);
     }
 
     // Get review by ID
@@ -114,5 +122,15 @@ public class ReviewService {
         }
         reviewStorage.findById(reviewId)
                 .orElseThrow(() -> new NotFoundException("Review with id=" + reviewId + " not found"));
+    }
+
+    private void validateReviewProps(Review review) {
+        if (review.getContent() == null) {
+            throw new ValidationException("Empty content is not allowed");
+        }
+
+        if (review.getIsPositive() == null) {
+            throw new ValidationException("Positivity should be specified");
+        }
     }
 }

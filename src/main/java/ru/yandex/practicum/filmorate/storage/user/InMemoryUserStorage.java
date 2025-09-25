@@ -17,10 +17,10 @@ public class InMemoryUserStorage implements UserStorage {
     // Creating a new user
     @Override
     public User addUser(User user) {
-        validate(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
+        validate(user);
         user.setId(nextId++);
         users.put(user.getId(), user);
         return user;
@@ -30,7 +30,7 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public User updateUser(User user) {
         if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("User with id=" + user.getId() + " not found.");
+            throw new NotFoundException("User not found.");
         }
         users.put(user.getId(), user);
         return user;
