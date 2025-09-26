@@ -1,73 +1,68 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
 
 import java.util.List;
 
-// Controller for reviews
 @RestController
 @RequestMapping("/reviews")
 @RequiredArgsConstructor
+@Validated
 public class ReviewController {
 
     private final ReviewService reviewService;
 
-    // Create review
     @PostMapping
-    public Review create(@RequestBody Review review) {
+    public Review create(@Valid @RequestBody Review review) {
         return reviewService.create(review);
     }
 
-    // Update review
     @PutMapping
-    public Review update(@RequestBody Review review) {
+    public Review update(@Valid @RequestBody Review review) {
         return reviewService.update(review);
     }
 
-    // Delete review
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable int id) {
+    public void delete(@PathVariable @Positive int id) {
         reviewService.delete(id);
     }
 
-    // Get review by ID
     @GetMapping("/{id}")
-    public Review getById(@PathVariable int id) {
+    public Review getById(@PathVariable @Positive int id) {
         return reviewService.getById(id);
     }
 
-    // Get reviews for a film (or all if filmId not provided)
     @GetMapping
     public List<Review> getByFilm(
-            @RequestParam(required = false) Integer filmId,
-            @RequestParam(defaultValue = "10") int count) {
+            @RequestParam(required = false) @Positive Integer filmId,
+            @RequestParam(defaultValue = "10") @Min(1) int count) {
         return reviewService.getByFilm(filmId, count);
     }
 
-    // Add like
     @PutMapping("/{id}/like/{userId}")
-    public void addLike(@PathVariable int id, @PathVariable int userId) {
+    public void addLike(@PathVariable @Positive int id, @PathVariable @Positive int userId) {
         reviewService.addLike(id, userId);
     }
 
-    // Add dislike
     @PutMapping("/{id}/dislike/{userId}")
-    public void addDislike(@PathVariable int id, @PathVariable int userId) {
+    public void addDislike(@PathVariable @Positive int id, @PathVariable @Positive int userId) {
         reviewService.addDislike(id, userId);
     }
 
-    // Remove like
     @DeleteMapping("/{id}/like/{userId}")
-    public void removeLike(@PathVariable int id, @PathVariable int userId) {
+    public void removeLike(@PathVariable @Positive int id, @PathVariable @Positive int userId) {
         reviewService.removeLike(id, userId);
     }
 
-    // Remove dislike
     @DeleteMapping("/{id}/dislike/{userId}")
-    public void removeDislike(@PathVariable int id, @PathVariable int userId) {
+    public void removeDislike(@PathVariable @Positive int id, @PathVariable @Positive int userId) {
         reviewService.removeDislike(id, userId);
     }
 }

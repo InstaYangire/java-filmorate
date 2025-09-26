@@ -14,7 +14,6 @@ public class InMemoryUserStorage implements UserStorage {
     private final Map<Integer, User> users = new HashMap<>();
     private int nextId = 1;
 
-    // Creating a new user
     @Override
     public User addUser(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
@@ -26,7 +25,6 @@ public class InMemoryUserStorage implements UserStorage {
         return user;
     }
 
-    // Updating an existing user by id
     @Override
     public User updateUser(User user) {
         if (!users.containsKey(user.getId())) {
@@ -36,19 +34,16 @@ public class InMemoryUserStorage implements UserStorage {
         return user;
     }
 
-    // Getting a user by id
     @Override
     public Optional<User> getUserById(int id) {
         return Optional.ofNullable(users.get(id));
     }
 
-    // Getting a list of all users
     @Override
     public List<User> getAllUsers() {
         return new ArrayList<>(users.values());
     }
 
-    // Deleting user by Id
     @Override
     public void deleteUser(int id) {
         if (!users.containsKey(id)) {

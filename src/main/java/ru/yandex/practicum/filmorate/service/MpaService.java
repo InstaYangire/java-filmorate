@@ -13,12 +13,10 @@ public class MpaService {
 
     private final MpaDbStorage mpaDbStorage;
 
-    // Getting a list of all MPA ratings
     public List<MpaRating> getAllMpaRatings() {
         return mpaDbStorage.getAllRatings();
     }
 
-    // Getting an MPA rating by id
     public MpaRating getMpaRatingById(int id) {
         return mpaDbStorage.getRatingById(id);
     }

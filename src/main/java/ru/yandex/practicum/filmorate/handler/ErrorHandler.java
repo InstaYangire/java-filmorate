@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.handler;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,12 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND) // 404
     public Map<String, String> handleNotFound(NotFoundException e) {
         return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleConstraintViolation(ConstraintViolationException e) {
+        return Map.of("error", "Not found: " + e.getMessage());
     }
 
     @ExceptionHandler(Throwable.class)

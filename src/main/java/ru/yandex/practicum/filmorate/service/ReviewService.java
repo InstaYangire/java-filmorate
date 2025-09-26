@@ -13,7 +13,6 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
 
-// Service layer for reviews
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -23,7 +22,6 @@ public class ReviewService {
     private final FilmStorage filmStorage;
     private final FeedService feedService;
 
-    // Create a new review
     public Review create(Review review) {
         validateUserAndFilm(review.getUserId(), review.getFilmId());
         validateReviewProps(review);
@@ -38,7 +36,6 @@ public class ReviewService {
         return createdReview;
     }
 
-    // Update review
     public Review update(Review review) {
         validateUserAndFilm(review.getUserId(), review.getFilmId());
         Review existingReview = getById(review.getReviewId());
@@ -47,7 +44,6 @@ public class ReviewService {
         return updatedReview;
     }
 
-    // Delete review by ID
     public void delete(int reviewId) {
         checkReview(reviewId);
         Review existingReview = getById(reviewId);
@@ -55,39 +51,33 @@ public class ReviewService {
         feedService.addFeed(existingReview.getUserId(), EventType.REVIEW, Operation.REMOVE, reviewId);
     }
 
-    // Get review by ID
     public Review getById(int reviewId) {
         return reviewStorage.findById(reviewId)
                 .orElseThrow(() -> new NotFoundException("Review with id=" + reviewId + " not found"));
     }
 
-    // Get reviews for a film (or all if filmId == null)
     public List<Review> getByFilm(Integer filmId, int count) {
         return reviewStorage.findByFilmId(filmId, count);
     }
 
-    // Add like
     public void addLike(int reviewId, int userId) {
         checkUser(userId);
         checkReview(reviewId);
         reviewStorage.addLike(reviewId, userId);
     }
 
-    // Add dislike
     public void addDislike(int reviewId, int userId) {
         checkUser(userId);
         checkReview(reviewId);
         reviewStorage.addDislike(reviewId, userId);
     }
 
-    // Remove like
     public void removeLike(int reviewId, int userId) {
         checkUser(userId);
         checkReview(reviewId);
         reviewStorage.removeLike(reviewId, userId);
     }
 
-    // Remove dislike
     public void removeDislike(int reviewId, int userId) {
         checkUser(userId);
         checkReview(reviewId);

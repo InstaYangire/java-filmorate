@@ -20,7 +20,6 @@ public class DirectorDbStorage implements DirectorStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Get all directors
     @Override
     public List<Director> findAll() {
         String sql = "SELECT * FROM directors ORDER BY id";
@@ -28,7 +27,6 @@ public class DirectorDbStorage implements DirectorStorage {
                 new Director(rs.getInt("id"), rs.getString("name")));
     }
 
-    // Finding director by id
     @Override
     public Optional<Director> findById(int id) {
         String sql = "SELECT * FROM directors WHERE id = ?";
@@ -37,7 +35,6 @@ public class DirectorDbStorage implements DirectorStorage {
         return directors.stream().findFirst();
     }
 
-    // Creating new director
     @Override
     public Director create(Director director) {
         String sql = "INSERT INTO directors (name) VALUES (?)";
@@ -53,7 +50,6 @@ public class DirectorDbStorage implements DirectorStorage {
         return director;
     }
 
-    // Updating director
     @Override
     public Director update(Director director) {
         String sql = "UPDATE directors SET name = ? WHERE id = ?";
@@ -67,14 +63,12 @@ public class DirectorDbStorage implements DirectorStorage {
         return director;
     }
 
-    // Deleting director
     @Override
     public void delete(int id) {
         String sql = "DELETE FROM directors WHERE id = ?";
         jdbcTemplate.update(sql, id);
     }
 
-    // Get director by film's id
     @Override
     public List<Director> getDirectorByFilmId(int filmId) {
         String sql = "SELECT d.* FROM directors d " +
@@ -83,5 +77,4 @@ public class DirectorDbStorage implements DirectorStorage {
         return jdbcTemplate.query(sql, (rs, rowNum) ->
                 new Director(rs.getInt("id"), rs.getString("name")), filmId);
     }
-
 }

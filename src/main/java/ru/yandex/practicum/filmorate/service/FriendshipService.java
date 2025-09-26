@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// Service for managing friendships between users
 @Service
 public class FriendshipService {
 
@@ -24,7 +23,6 @@ public class FriendshipService {
         this.userStorage = userStorage;
     }
 
-    // Add a friend (creates a friend request)
     public void addFriend(int userId, int friendId) {
         if (userId == friendId) {
             throw new IllegalArgumentException("You cannot add yourself as a friend.");
@@ -38,7 +36,6 @@ public class FriendshipService {
         friendshipStorage.add(friendship);
     }
 
-    // Confirm a friendship request
     public void confirmFriendship(int userId, int friendId) {
         List<Friendship> pending = friendshipStorage.getFriendshipsByUserId(friendId).stream()
                 .filter(f -> f.getFriendId() == userId && !f.isConfirmed())
@@ -53,7 +50,6 @@ public class FriendshipService {
         friendshipStorage.add(new Friendship(userId, friendId, true));
     }
 
-    // Remove a friendship
     public void removeFriend(int userId, int friendId) {
         userStorage.getUserById(friendId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + friendId));
@@ -62,7 +58,6 @@ public class FriendshipService {
         friendshipStorage.remove(friendship);
     }
 
-    // Get the list of friends for a user
     public List<User> getFriends(int userId) {
         List<Friendship> friendships = friendshipStorage.getFriendshipsByUserId(userId);
         return friendships.stream()
@@ -71,7 +66,6 @@ public class FriendshipService {
                 .toList();
     }
 
-    // Get the list of common friends between two users
     public List<User> getCommonFriends(int userId, int otherUserId) {
         Set<Integer> user1FriendIds = friendshipStorage.getFriendshipsByUserId(userId).stream()
                 .map(Friendship::getFriendId)

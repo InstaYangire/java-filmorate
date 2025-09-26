@@ -21,7 +21,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Integer, Set<Integer>> filmToUsers = new HashMap<>();
     private int nextId = 1;
 
-    // Adding a new movie
     @Override
     public Film addFilm(Film film) {
         validateFilm(film);
@@ -30,7 +29,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         return film;
     }
 
-    // Updating an existing movie by id
     @Override
     public Film updateFilm(Film film) {
         if (!films.containsKey(film.getId())) {
@@ -40,19 +38,16 @@ public class InMemoryFilmStorage implements FilmStorage {
         return film;
     }
 
-    // Getting a movie by id
     @Override
     public Optional<Film> getFilmById(int id) {
         return Optional.ofNullable(films.get(id));
     }
 
-    // Getting a list of all movies
     @Override
     public List<Film> getAllFilms() {
         return new ArrayList<>(films.values());
     }
 
-    // Getting a list of common films
     @Override
     public List<Film> getCommonFilms(int userId, int friendId) {
         List<Film> commonFilms = new ArrayList<>();
@@ -64,7 +59,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         return commonFilms;
     }
 
-    // Getting films by director
     @Override
     public List<Film> getFilmsByDirector(int directorId) {
         List<Film> filmsByDirector = new ArrayList<>();
@@ -83,7 +77,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         return filmsByDirector;
     }
 
-    // Searching films by title, description or director
     @Override
     public List<Film> searchFilms(String query, List<String> by) {
         if (query == null || query.isBlank()) {
@@ -113,24 +106,19 @@ public class InMemoryFilmStorage implements FilmStorage {
                 .toList();
     }
 
-    // Getting popular films with optional filters (genreId, year)
     @Override
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
         return films.values().stream()
-                // фильтр по жанру (если задан)
                 .filter(film -> genreId == null ||
                         (film.getGenres() != null && film.getGenres().stream().anyMatch(g -> g.getId() == genreId)))
-                // фильтр по году (если задан)
                 .filter(film -> year == null ||
                         (film.getReleaseDate() != null && film.getReleaseDate().getYear() == year))
-                // сортировка по количеству лайков
                 .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
                 .limit(count)
                 .toList();
     }
 
     // __________Likes_____________
-    // Adding like
     @Override
     public void addLike(int filmId, int userId) {
         getFilmById(filmId).ifPresentOrElse(
@@ -151,7 +139,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         );
     }
 
-    // Removing like
     @Override
     public void removeLike(int filmId, int userId) {
         getFilmById(filmId).ifPresentOrElse(
@@ -179,7 +166,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         );
     }
 
-    // Getting Recommendations
     @Override
     public List<Film> getRecommendations(int userId) {
         // Checking if the user has likes
@@ -199,7 +185,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         return getFilmsSortedByPopularity(recommendedFilmIds);
     }
 
-    // Deleting a film
     @Override
     public void deleteFilm(int id) {
         if (!films.containsKey(id)) {

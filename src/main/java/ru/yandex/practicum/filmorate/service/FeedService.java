@@ -21,7 +21,6 @@ public class FeedService {
     private final FeedStorage feedStorage;
     private final UserStorage userStorage;
 
-    // Adding feed
     public void addFeed(int userId, EventType eventType, Operation operation, int entityId) {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -38,14 +37,12 @@ public class FeedService {
                 userId, eventType, operation, entityId);
     }
 
-    // Getting feed by user ID
     public List<Feed> getFeedByUserId(int userId) {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
         return feedStorage.getFeedByUserId(userId);
     }
 
-    // Removing user feed
     public void removeUserFeed(int userId) {
         feedStorage.removeFeedByUserId(userId);
         log.info("All feed events for user {} removed", userId);

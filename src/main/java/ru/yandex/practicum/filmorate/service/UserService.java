@@ -32,7 +32,6 @@ public class UserService {
     }
 
     //___________User____________
-    // Creating a new user
     public User addUser(User user) {
         log.info("Received a request to add a new user: {}", user);
         if (user.getName() == null || user.getName().isBlank()) {
@@ -44,7 +43,6 @@ public class UserService {
         return createdUser;
     }
 
-    // Updating an existing user by id
     public User updateUser(User user) {
         log.info("Received a request to update user: {}", user);
         validate(user);
@@ -55,21 +53,18 @@ public class UserService {
         return updatedUser;
     }
 
-    // Getting a list of all users
     public List<User> getAllUsers() {
         List<User> users = userStorage.getAllUsers();
         log.info("Request for list of all users received. Quantity: {}", users.size());
         return users;
     }
 
-    // Getting a user by id
     public User getUserById(int id) {
         return userStorage.getUserById(id)
                 .orElseThrow(() -> new NotFoundException("User not found."));
     }
 
     //_________Friends_________
-    // Adding a new friend
     public void addFriend(int userId, int friendId) {
         if (userId == friendId) {
             throw new ValidationException("User cannot add themselves as a friend.");
@@ -87,7 +82,6 @@ public class UserService {
         log.info("User with id={} added user with id={} as a friend.", userId, friendId);
     }
 
-    // Removing a friend
     public User removeFriend(int userId, int friendId) {
 
         friendshipService.removeFriend(userId, friendId);
@@ -100,7 +94,6 @@ public class UserService {
         return user;
     }
 
-    // Getting a list of friends
     public List<User> getFriends(int userId) {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -110,7 +103,6 @@ public class UserService {
         return friends;
     }
 
-    // Getting a list of common friends
     public List<User> getCommonFriends(int userId, int otherId) {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -124,7 +116,6 @@ public class UserService {
         return commonFriends;
     }
 
-    // Deleting user
     public void deleteUser(int id) {
         log.info("Received request to delete user with id={}", id);
         if (id <= 0) {

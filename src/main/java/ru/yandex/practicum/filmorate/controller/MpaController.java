@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.service.MpaService;
@@ -10,19 +12,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/mpa")
 @RequiredArgsConstructor
+@Validated
 public class MpaController {
 
     private final MpaService mpaService;
 
-    // Getting a list of all MPA ratings
     @GetMapping
     public List<MpaRating> getAllMpaRatings() {
         return mpaService.getAllMpaRatings();
     }
 
-    // Getting an MPA rating by id
     @GetMapping("/{id}")
-    public MpaRating getMpaRatingById(@PathVariable int id) {
+    public MpaRating getMpaRatingById(@PathVariable @Positive int id) {
         return mpaService.getMpaRatingById(id);
     }
 }

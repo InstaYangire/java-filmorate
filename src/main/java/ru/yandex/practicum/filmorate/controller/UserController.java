@@ -1,7 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
@@ -13,75 +16,64 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/users")
+@RequiredArgsConstructor
+@Validated
 public class UserController {
+
     private final UserService userService;
     private final FilmService filmService;
 
-    @Autowired
-    public UserController(UserService userService, FilmService filmService) {
-        this.userService = userService;
-        this.filmService = filmService;
-    }
-
     //_________User_________
-    // Creating a new user
+
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public User createUser(@Valid @RequestBody User user) {
         return userService.addUser(user);
     }
 
-    // Update existing user by id
     @PutMapping
-    public User updateUser(@RequestBody User user) {
+    public User updateUser(@Valid @RequestBody User user) {
         return userService.updateUser(user);
     }
 
-    // Getting a list of all users
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    // Getting user by id
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable int id) {
+    public User getUserById(@PathVariable @Positive int id) {
         return userService.getUserById(id);
     }
 
     //_________Friends_________
-    // Adding a new friend
+
     @PutMapping("/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable int id, @PathVariable int friendId) {
+    public void addFriend(@PathVariable @Positive int id, @PathVariable @Positive int friendId) {
         userService.addFriend(id, friendId);
     }
 
-    // Removing a friend
     @DeleteMapping("/{id}/friends/{friendId}")
-    public User removeFriend(@PathVariable int id, @PathVariable int friendId) {
+    public User removeFriend(@PathVariable @Positive int id, @PathVariable @Positive int friendId) {
         return userService.removeFriend(id, friendId);
     }
 
-    // Getting a list of friends
     @GetMapping("/{id}/friends")
-    public List<User> getFriends(@PathVariable int id) {
+    public List<User> getFriends(@PathVariable @Positive int id) {
         return userService.getFriends(id);
     }
 
-    // Getting a list of common friends
     @GetMapping("/{id}/friends/common/{otherId}")
-    public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+    public List<User> getCommonFriends(@PathVariable @Positive int id, @PathVariable @Positive int otherId) {
         return userService.getCommonFriends(id, otherId);
     }
 
-    // Getting recommendations
     @GetMapping("/{id}/recommendations")
-    public List<Film> getRecommendations(@PathVariable int id) {
+    public List<Film> getRecommendations(@PathVariable @Positive int id) {
         return filmService.getRecommendations(id);
     }
 
-    // Deleting user
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable int id) {
+    public void deleteUser(@PathVariable @Positive int id) {
         userService.deleteUser(id);
     }
 }

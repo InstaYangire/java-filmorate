@@ -12,7 +12,6 @@ import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,7 +48,6 @@ public class FilmService {
     }
 
     // ___________Films___________
-    // Adding a new movie
     public Film addFilm(Film film) {
         log.info("Request received to add movie: {}", film);
         validateFilm(film);
@@ -59,7 +57,6 @@ public class FilmService {
         return createdFilm;
     }
 
-    // Updating an existing movie by id
     public Film updateFilm(Film film) {
         log.info("Received a request to update film: {}", film);
         validateFilm(film);
@@ -71,40 +68,25 @@ public class FilmService {
         return updatedFilm;
     }
 
-    // Getting a list of all movies
     public List<Film> getAllFilms() {
         List<Film> films = filmStorage.getAllFilms();
         log.info("Request for list of all movies received. Quantity: {}", films.size());
         return films;
     }
 
-    // Getting a movie by id
     public Film getFilmById(int id) {
         return filmStorage.getFilmById(id)
                 .orElseThrow(() -> new NotFoundException("Movie with id=" + id + " not found."));
     }
 
-    // Getting films by director
     public List<Film> getFilmsByDirector(int directorId, String sortBy) {
         directorService.getDirectorById(directorId);
-
-        List<Film> filmsWithDirector = filmStorage.getAllFilms().stream()
-                .filter(film -> film.getDirectors() != null &&
-                        film.getDirectors().stream()
-                                .anyMatch(director -> director.getId() == directorId))
-                .collect(Collectors.toList());
-
-        if ("year".equalsIgnoreCase(sortBy)) {
-            filmsWithDirector.sort(Comparator.comparing(Film::getReleaseDate));
-        } else {
-            filmsWithDirector.sort((f1, f2) ->
-                    Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
-        }
-
-        return filmsWithDirector;
+        List<Film> films = ((ru.yandex.practicum.filmorate.storage.film.FilmDbStorage) filmStorage)
+                .getFilmsByDirector(directorId, sortBy);
+        log.info("Found {} films for directorId={} sorted by={}", films.size(), directorId, sortBy);
+        return films;
     }
 
-    // Searching films by query and parameters (title, description, director)
     public List<Film> searchFilms(String query, List<String> by) {
         log.info("Search request received. Query='{}', by={}", query, by);
 
@@ -129,7 +111,6 @@ public class FilmService {
         return results;
     }
 
-    // Getting list of popular films with optional filters
     public List<Film> getPopular(int count, Integer genreId, Integer year) {
         List<Film> films = filmStorage.getPopularFilms(count, genreId, year);
         log.info("Request for top {} popular films with filters genreId={}, year={} → found {} films",
@@ -138,7 +119,6 @@ public class FilmService {
     }
 
     //___________Likes__________
-    // Adding a like to a movie
     public void addLike(int filmId, int userId) {
         filmStorage.getFilmById(filmId)
                 .orElseThrow(() -> new NotFoundException("Film with id=" + filmId + " not found."));
@@ -150,7 +130,6 @@ public class FilmService {
         log.info("User with id={} liked film with id={}", userId, filmId);
     }
 
-    // Removing a like from a movie
     public void removeLike(int filmId, int userId) {
         filmStorage.getFilmById(filmId)
                 .orElseThrow(() -> new NotFoundException("Film with id=" + filmId + " not found."));
@@ -162,7 +141,6 @@ public class FilmService {
         log.info("User with id={} removed like from film with id={}", userId, filmId);
     }
 
-    // Getting a list of the most popular movies
     public List<Film> getPopular(int count) {
         List<Film> allFilms = filmStorage.getAllFilms();
         List<Film> sorted = allFilms.stream()
@@ -173,7 +151,6 @@ public class FilmService {
         return sorted;
     }
 
-    // Getting common films
     public List<Film> getCommonFilms(int userId, int friendId) {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -184,7 +161,6 @@ public class FilmService {
         return listFilms;
     }
 
-    // Getting recommendations
     public List<Film> getRecommendations(int userId) {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -194,7 +170,6 @@ public class FilmService {
         return listFilms != null ? listFilms : Collections.emptyList();
     }
 
-    // Deleting a film
     public void deleteFilm(int id) {
         log.info("Received request to delete film with id={}", id);
         getFilmById(id);
@@ -202,7 +177,6 @@ public class FilmService {
         log.info("Film with id={} deleted successfully", id);
     }
 
-    // Validate and replace MPA and genres from services
     private void validateAndSetMpaAndGenres(Film film) {
         if (film.getMpa() != null) {
             int mpaId = film.getMpa().getId();

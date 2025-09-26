@@ -23,7 +23,6 @@ public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Creating a new user in the database
     @Override
     public User addUser(User user) {
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
@@ -44,7 +43,6 @@ public class UserDbStorage implements UserStorage {
         return getUserById(userId).orElseThrow(() -> new NotFoundException("User not found after creation."));
     }
 
-    // Updating an existing user by id
     @Override
     public User updateUser(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
@@ -62,7 +60,6 @@ public class UserDbStorage implements UserStorage {
         return getUserById(user.getId()).orElseThrow(() -> new NotFoundException("User not found after update."));
     }
 
-    // Getting a user by id
     @Override
     public Optional<User> getUserById(int id) {
         String sql = "SELECT * FROM users WHERE id = ?";
@@ -79,7 +76,6 @@ public class UserDbStorage implements UserStorage {
         return users.stream().findFirst();
     }
 
-    // Getting a list of all users
     @Override
     public List<User> getAllUsers() {
         String sql = "SELECT * FROM users";
@@ -94,7 +90,6 @@ public class UserDbStorage implements UserStorage {
         });
     }
 
-    // Deleting user
     @Override
     public void deleteUser(int id) {
         try {

@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
@@ -15,14 +16,12 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-// Database storage implementation for reviews
 @Repository
 @RequiredArgsConstructor
 public class ReviewDbStorage implements ReviewStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Create a new review
     @Override
     public Review create(Review review) {
         String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id, useful) VALUES (?, ?, ?, ?, 0)";
@@ -42,7 +41,6 @@ public class ReviewDbStorage implements ReviewStorage {
         return review;
     }
 
-    // Update an existing review
     @Override
     public Review update(Review review) {
         String sql = "UPDATE reviews SET content = ?, is_positive = ? WHERE review_id = ?";
@@ -54,7 +52,6 @@ public class ReviewDbStorage implements ReviewStorage {
         return findById(review.getReviewId()).get();
     }
 
-    // Delete a review by ID
     @Override
     public void delete(int reviewId) {
         int deleted = jdbcTemplate.update("DELETE FROM reviews WHERE review_id = ?", reviewId);
@@ -63,7 +60,6 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    // Find review by ID
     @Override
     public Optional<Review> findById(int reviewId) {
         String sql = "SELECT * FROM reviews WHERE review_id = ?";
@@ -71,7 +67,6 @@ public class ReviewDbStorage implements ReviewStorage {
         return reviews.stream().findFirst();
     }
 
-    // Find all reviews for a film (sorted by useful, or all reviews if filmId = null)
     @Override
     public List<Review> findByFilmId(Integer filmId, int count) {
         String sql = """
@@ -89,8 +84,8 @@ public class ReviewDbStorage implements ReviewStorage {
         );
     }
 
-    // Add like to a review
     @Override
+    @Transactional
     public void addLike(int reviewId, int userId) {
         Boolean isPositive = jdbcTemplate.query(
                 "SELECT is_positive FROM review_likes WHERE review_id = ? AND user_id = ?",
@@ -119,7 +114,7 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    // Add dislike to a review
+    @Transactional
     public void addDislike(int reviewId, int userId) {
         Boolean isPositive = jdbcTemplate.query(
                 "SELECT is_positive FROM review_likes WHERE review_id = ? AND user_id = ?",
@@ -148,8 +143,8 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    // Remove like from a review
     @Override
+    @Transactional
     public void removeLike(int reviewId, int userId) {
         int deleted = jdbcTemplate.update(
                 "DELETE FROM review_likes WHERE review_id = ? AND user_id = ? AND is_positive = TRUE",
@@ -160,8 +155,8 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    // Remove dislike from a review
     @Override
+    @Transactional
     public void removeDislike(int reviewId, int userId) {
         int deleted = jdbcTemplate.update(
                 "DELETE FROM review_likes WHERE review_id = ? AND user_id = ? AND is_positive = FALSE",
@@ -172,7 +167,6 @@ public class ReviewDbStorage implements ReviewStorage {
         }
     }
 
-    // Map SQL row to Review object
     private Review mapRowToReview(ResultSet rs) throws SQLException {
         return new Review(
                 rs.getInt("review_id"),
