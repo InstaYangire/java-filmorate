@@ -6,8 +6,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+
 import java.util.List;
 
 import static ru.yandex.practicum.filmorate.validator.UserValidator.validate;
@@ -17,24 +20,29 @@ import static ru.yandex.practicum.filmorate.validator.UserValidator.validate;
 public class UserService {
     private final UserStorage userStorage;
     private final FriendshipService friendshipService;
+    private final FeedService feedService;
 
     @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage, FriendshipService friendshipService) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage,
+                       FriendshipService friendshipService,
+                       FeedService feedService) {
         this.userStorage = userStorage;
         this.friendshipService = friendshipService;
+        this.feedService = feedService;
     }
 
     //___________User____________
-    // Creating a new user
     public User addUser(User user) {
         log.info("Received a request to add a new user: {}", user);
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
         validate(user);
         User createdUser = userStorage.addUser(user);
         log.info("User added successfully: {}", createdUser);
         return createdUser;
     }
 
-    // Updating an existing user by id
     public User updateUser(User user) {
         log.info("Received a request to update user: {}", user);
         validate(user);
@@ -45,32 +53,35 @@ public class UserService {
         return updatedUser;
     }
 
-    // Getting a list of all users
     public List<User> getAllUsers() {
         List<User> users = userStorage.getAllUsers();
         log.info("Request for list of all users received. Quantity: {}", users.size());
         return users;
     }
 
-    // Getting a user by id
     public User getUserById(int id) {
         return userStorage.getUserById(id)
-                .orElseThrow(() -> new NotFoundException("User with id=" + id + " not found."));
+                .orElseThrow(() -> new NotFoundException("User not found."));
     }
 
     //_________Friends_________
-    // Adding a new friend
     public void addFriend(int userId, int friendId) {
         if (userId == friendId) {
             throw new ValidationException("User cannot add themselves as a friend.");
         }
 
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        userStorage.getUserById(friendId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + friendId + " not found."));
+
         friendshipService.addFriend(userId, friendId);
+
+        feedService.addFeed(userId, EventType.FRIEND, Operation.ADD, friendId);
 
         log.info("User with id={} added user with id={} as a friend.", userId, friendId);
     }
 
-    // Removing a friend
     public User removeFriend(int userId, int friendId) {
 
         friendshipService.removeFriend(userId, friendId);
@@ -78,11 +89,11 @@ public class UserService {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
+        feedService.addFeed(userId, EventType.FRIEND, Operation.REMOVE, friendId);
         log.info("User with id={} removed user with id={} from friends.", userId, friendId);
         return user;
     }
 
-    // Getting a list of friends
     public List<User> getFriends(int userId) {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -92,7 +103,6 @@ public class UserService {
         return friends;
     }
 
-    // Getting a list of common friends
     public List<User> getCommonFriends(int userId, int otherId) {
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
@@ -104,5 +114,15 @@ public class UserService {
 
         log.info("Request for common friends of users with id={} and id={}. Quantity: {}", userId, otherId, commonFriends.size());
         return commonFriends;
+    }
+
+    public void deleteUser(int id) {
+        log.info("Received request to delete user with id={}", id);
+        if (id <= 0) {
+            throw new ValidationException("User id must be more than 0.");
+        }
+        getUserById(id);
+        userStorage.deleteUser(id);
+        log.info("User with id={} deleted successfully", id);
     }
 }

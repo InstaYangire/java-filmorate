@@ -20,9 +20,9 @@ class UserServiceValidationTest {
     void setUp() {
         InMemoryUserStorage userStorage = new InMemoryUserStorage();
         InMemoryFriendshipStorage friendshipStorage = new InMemoryFriendshipStorage();
+        FeedService feedService = new FeedService(null, null);
         FriendshipService friendshipService = new FriendshipService(friendshipStorage, userStorage);
-
-        userService = new UserService(userStorage, friendshipService);
+        userService = new UserService(userStorage, friendshipService, feedService);
     }
 
     // ____________Helpers___________

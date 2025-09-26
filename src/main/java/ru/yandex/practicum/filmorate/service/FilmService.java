@@ -3,14 +3,15 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,20 +26,28 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaService mpaService;
     private final GenreService genreService;
+    private final DirectorService directorService;
+    private final JdbcTemplate jdbcTemplate;
+    private final FeedService feedService;
 
     @Autowired
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
                        @Qualifier("userDbStorage") UserStorage userStorage,
                        @Qualifier("mpaService") MpaService mpaService,
-                       @Qualifier("genreService") GenreService genreService) {
+                       @Qualifier("genreService") GenreService genreService,
+                       DirectorService directorService,
+                       JdbcTemplate jdbcTemplate,
+                       FeedService feedService) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaService = mpaService;
         this.genreService = genreService;
+        this.directorService = directorService;
+        this.jdbcTemplate = jdbcTemplate;
+        this.feedService = feedService;
     }
 
     // ___________Films___________
-    // Adding a new movie
     public Film addFilm(Film film) {
         log.info("Request received to add movie: {}", film);
         validateFilm(film);
@@ -48,7 +57,6 @@ public class FilmService {
         return createdFilm;
     }
 
-    // Updating an existing movie by id
     public Film updateFilm(Film film) {
         log.info("Received a request to update film: {}", film);
         validateFilm(film);
@@ -60,21 +68,57 @@ public class FilmService {
         return updatedFilm;
     }
 
-    // Getting a list of all movies
     public List<Film> getAllFilms() {
         List<Film> films = filmStorage.getAllFilms();
         log.info("Request for list of all movies received. Quantity: {}", films.size());
         return films;
     }
 
-    // Getting a movie by id
     public Film getFilmById(int id) {
         return filmStorage.getFilmById(id)
                 .orElseThrow(() -> new NotFoundException("Movie with id=" + id + " not found."));
     }
 
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        directorService.getDirectorById(directorId);
+        List<Film> films = ((ru.yandex.practicum.filmorate.storage.film.FilmDbStorage) filmStorage)
+                .getFilmsByDirector(directorId, sortBy);
+        log.info("Found {} films for directorId={} sorted by={}", films.size(), directorId, sortBy);
+        return films;
+    }
+
+    public List<Film> searchFilms(String query, List<String> by) {
+        log.info("Search request received. Query='{}', by={}", query, by);
+
+        if (by == null || by.isEmpty()) {
+            throw new ru.yandex.practicum.filmorate.exception.ValidationException(
+                    "Search parameter 'by' cannot be empty."
+            );
+        }
+
+        List<String> allowed = List.of("title", "description", "director");
+
+        for (String param : by) {
+            if (!allowed.contains(param.toLowerCase())) {
+                throw new ru.yandex.practicum.filmorate.exception.ValidationException(
+                        "Invalid search parameter: " + param
+                );
+            }
+        }
+
+        List<Film> results = filmStorage.searchFilms(query, by);
+        log.info("Search completed. Found {} films.", results.size());
+        return results;
+    }
+
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        List<Film> films = filmStorage.getPopularFilms(count, genreId, year);
+        log.info("Request for top {} popular films with filters genreId={}, year={} → found {} films",
+                count, genreId, year, films.size());
+        return films;
+    }
+
     //___________Likes__________
-    // Adding a like to a movie
     public void addLike(int filmId, int userId) {
         filmStorage.getFilmById(filmId)
                 .orElseThrow(() -> new NotFoundException("Film with id=" + filmId + " not found."));
@@ -82,22 +126,21 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
         filmStorage.addLike(filmId, userId);
+        feedService.addFeed(userId, EventType.LIKE, Operation.ADD, filmId);
         log.info("User with id={} liked film with id={}", userId, filmId);
     }
 
-    // Removing a like from a movie
     public void removeLike(int filmId, int userId) {
         filmStorage.getFilmById(filmId)
                 .orElseThrow(() -> new NotFoundException("Film with id=" + filmId + " not found."));
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
 
-        filmStorage.removeLike(filmId, userId); // Удаляем из базы
-
+        filmStorage.removeLike(filmId, userId);
+        feedService.addFeed(userId, EventType.LIKE, Operation.REMOVE, filmId);
         log.info("User with id={} removed like from film with id={}", userId, filmId);
     }
 
-    // Getting a list of the most popular movies
     public List<Film> getPopular(int count) {
         List<Film> allFilms = filmStorage.getAllFilms();
         List<Film> sorted = allFilms.stream()
@@ -108,7 +151,32 @@ public class FilmService {
         return sorted;
     }
 
-    // Validate and replace MPA and genres from services
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        userStorage.getUserById(friendId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + friendId + " not found."));
+        List<Film> listFilms = filmStorage.getCommonFilms(userId, friendId);
+        log.info("User {} and user {} have {} common films.", userId, friendId, listFilms.size());
+        return listFilms;
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found."));
+        List<Film> listFilms = filmStorage.getRecommendations(userId);
+        log.info("User {} has {} recommendations.", userId, listFilms.size());
+
+        return listFilms != null ? listFilms : Collections.emptyList();
+    }
+
+    public void deleteFilm(int id) {
+        log.info("Received request to delete film with id={}", id);
+        getFilmById(id);
+        filmStorage.deleteFilm(id);
+        log.info("Film with id={} deleted successfully", id);
+    }
+
     private void validateAndSetMpaAndGenres(Film film) {
         if (film.getMpa() != null) {
             int mpaId = film.getMpa().getId();
@@ -120,6 +188,13 @@ public class FilmService {
                     .map(genre -> genreService.getGenreById(genre.getId()))
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             film.setGenres(validatedGenres);
+        }
+
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            List<Director> validatedDirectors = film.getDirectors().stream()
+                    .map(director -> directorService.getDirectorById(director.getId()))
+                    .collect(Collectors.toList());
+            film.setDirectors(validatedDirectors);
         }
     }
 }

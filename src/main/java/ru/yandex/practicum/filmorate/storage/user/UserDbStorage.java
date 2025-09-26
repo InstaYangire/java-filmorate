@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -17,11 +18,11 @@ import java.util.Optional;
 
 @Component("userDbStorage")
 @RequiredArgsConstructor
+@Primary
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Creating a new user in the database
     @Override
     public User addUser(User user) {
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
@@ -42,7 +43,6 @@ public class UserDbStorage implements UserStorage {
         return getUserById(userId).orElseThrow(() -> new NotFoundException("User not found after creation."));
     }
 
-    // Updating an existing user by id
     @Override
     public User updateUser(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
@@ -60,7 +60,6 @@ public class UserDbStorage implements UserStorage {
         return getUserById(user.getId()).orElseThrow(() -> new NotFoundException("User not found after update."));
     }
 
-    // Getting a user by id
     @Override
     public Optional<User> getUserById(int id) {
         String sql = "SELECT * FROM users WHERE id = ?";
@@ -77,7 +76,6 @@ public class UserDbStorage implements UserStorage {
         return users.stream().findFirst();
     }
 
-    // Getting a list of all users
     @Override
     public List<User> getAllUsers() {
         String sql = "SELECT * FROM users";
@@ -90,5 +88,28 @@ public class UserDbStorage implements UserStorage {
             user.setBirthday(rs.getDate("birthday").toLocalDate());
             return user;
         });
+    }
+
+    @Override
+    public void deleteUser(int id) {
+        try {
+            getUserById(id).orElseThrow(() ->
+                    new NotFoundException("User with id=" + id + " not found."));
+
+            jdbcTemplate.update("DELETE FROM review_likes WHERE user_id = ?", id);
+            jdbcTemplate.update("DELETE FROM reviews WHERE user_id = ?", id);
+            jdbcTemplate.update("DELETE FROM film_likes WHERE user_id = ?", id);
+            jdbcTemplate.update("DELETE FROM friendships WHERE user_id = ? OR friend_id = ?", id, id);
+            jdbcTemplate.update("DELETE FROM feed WHERE user_id = ?", id);
+
+            int deleted = jdbcTemplate.update("DELETE FROM users WHERE id = ?", id);
+
+            if (deleted == 0) {
+                throw new NotFoundException("User with id=" + id + " not found after deletion attempt.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

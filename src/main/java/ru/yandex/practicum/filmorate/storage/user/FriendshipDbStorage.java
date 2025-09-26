@@ -30,7 +30,6 @@ public class FriendshipDbStorage implements FriendshipStorage {
 
     // ----------- CRUD methods -----------
 
-    // Adding a new friendship (status is stored as CONFIRMED/UNCONFIRMED)
     @Override
     public void add(Friendship friendship) {
         String sql = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, ?)";
@@ -40,7 +39,6 @@ public class FriendshipDbStorage implements FriendshipStorage {
                 toDbStatus(friendship.isConfirmed()));
     }
 
-    // Updating friendship status (switching between CONFIRMED and UNCONFIRMED)
     @Override
     public void update(Friendship friendship) {
         String sql = "UPDATE friendships SET status = ? WHERE user_id = ? AND friend_id = ?";
@@ -50,7 +48,6 @@ public class FriendshipDbStorage implements FriendshipStorage {
                 friendship.getFriendId());
     }
 
-    // Removing a friendship
     @Override
     public void remove(Friendship friendship) {
         String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
@@ -59,7 +56,6 @@ public class FriendshipDbStorage implements FriendshipStorage {
                 friendship.getFriendId());
     }
 
-    // Getting all friendships of a given user
     @Override
     public List<Friendship> getFriendshipsByUserId(int userId) {
         String sql = "SELECT * FROM friendships WHERE user_id = ?";

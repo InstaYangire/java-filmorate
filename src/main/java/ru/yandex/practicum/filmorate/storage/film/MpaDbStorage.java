@@ -14,14 +14,12 @@ public class MpaDbStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Getting a list of all MPA ratings
     public List<MpaRating> getAllRatings() {
         String sql = "SELECT * FROM mpa_ratings ORDER BY id";
         return jdbcTemplate.query(sql, (rs, rowNum) ->
                 new MpaRating(rs.getInt("id"), rs.getString("name")));
     }
 
-    // Getting an MPA rating by id
     public MpaRating getRatingById(int id) {
         String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
         List<MpaRating> result = jdbcTemplate.query(sql, (rs, rowNum) ->
